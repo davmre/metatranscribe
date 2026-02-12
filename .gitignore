@@ -5,7 +5,7 @@ __pycache__/
 *.pyc
 
 /data/
-/outputs/
+/outputs*/
 /logs/
 
 *.egg-info/
@@ -14,4 +14,5 @@ __pycache__/
 
 *.egg-info/
 *~
+\#*
 .pytest_cache/
