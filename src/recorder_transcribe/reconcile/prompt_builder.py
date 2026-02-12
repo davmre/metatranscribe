@@ -58,11 +58,12 @@ def build_reconciliation_prompt(audio_id: str, transcripts: list[ProviderTranscr
     }
 
     instructions = {
-        "task": "Reconcile multiple transcripts into one best technical transcript.",
+        "task": "Reconcile multiple transcripts into one canonical transcript.",
         "constraints": [
             "Return strict JSON only.",
             "Keep segments in chronological order.",
             "If uncertain, preserve token in square brackets.",
+            "If it is unclear how to resolve a conflict, or if you suspect that a transcription is incorrect, you may provide multiple options in brackets [A/B].",
             "Set audio_id exactly as provided.",
             "Prefer timed segments from providers that supply them.",
             "Use untimed provider text as lexical support for wording/terminology.",
