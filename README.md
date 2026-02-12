@@ -67,8 +67,7 @@ Runs every 4 hours:
 - Transcription chunk size is configurable with `TRANSCRIBE_CHUNK_SECONDS` (default 540s).
 - Reconciliation always uses transcription chunk boundaries from `transcribe_chunks.json`.
 - Reconciliation provider is configurable via `RECONCILER_PROVIDER=openai|anthropic`.
-- Enable/disable polished final output with `ENABLE_POLISH_PASS=true|false`.
+- Export always runs the polish pass to generate human-readable Markdown.
 - Polish provider/model are configurable via `POLISH_PROVIDER` and `POLISH_MODEL`.
 - Increase verbosity with `LOG_LEVEL=DEBUG` in `.env`.
-- Final markdown format is configurable with `OUTPUT_STYLE=paragraph|timestamped`.
 - Silence markers are generated algorithmically from timeline gaps (default threshold 90 seconds).

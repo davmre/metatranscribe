@@ -13,8 +13,8 @@ from recorder_transcribe.config import (
 )
 from recorder_transcribe.ingest.manual_inbox import get_original_audio_path, ingest_new_files
 from recorder_transcribe.models import CanonicalTranscript, ProviderTranscript, Segment
+from recorder_transcribe.output.io import write_outputs
 from recorder_transcribe.output.polish_markdown import render_polished_markdown
-from recorder_transcribe.output.markdown_writer import render_markdown, write_outputs
 from recorder_transcribe.postprocess.silence_annotations import build_silence_markers
 from recorder_transcribe.preprocess.audio_prep import (
     AudioChunk,
@@ -203,37 +203,25 @@ def export_step(settings: Settings, store: StateStore, audio_id: str) -> None:
 
     source_file = get_original_audio_path(settings.data_root / "raw", audio_id).name
     providers = discover_chunk_providers(settings.output_root / "artifacts" / audio_id)
-    if settings.enable_polish_pass:
-        validate_polish_credentials(settings)
-        polish_provider = settings.polish_provider.strip().lower()
-        polish_api_key = resolve_llm_api_key(settings, polish_provider)
-        markdown_body = render_polished_markdown(
-            canonical=canonical,
-            provider=polish_provider,
-            model=settings.polish_model,
-            api_key=polish_api_key,
-            long_silence_seconds=settings.polish_long_silence_seconds,
-            artifacts_dir=settings.output_root / "artifacts" / audio_id / "polish",
-        )
-        markdown = _render_markdown_with_frontmatter(
-            body=markdown_body,
-            canonical=canonical,
-            source_file=source_file,
-            providers=providers,
-            reconciler_model=settings.reconciler_model,
-            pipeline_version=settings.pipeline_version,
-        )
-    else:
-        markdown = render_markdown(
-            canonical,
-            source_file=source_file,
-            providers=providers,
-            reconciler_model=settings.reconciler_model,
-            pipeline_version=settings.pipeline_version,
-            output_style=settings.output_style,
-            paragraph_gap_seconds=settings.paragraph_gap_seconds,
-            paragraph_max_chars=settings.paragraph_max_chars,
-        )
+    validate_polish_credentials(settings)
+    polish_provider = settings.polish_provider.strip().lower()
+    polish_api_key = resolve_llm_api_key(settings, polish_provider)
+    markdown_body = render_polished_markdown(
+        canonical=canonical,
+        provider=polish_provider,
+        model=settings.polish_model,
+        api_key=polish_api_key,
+        long_silence_seconds=settings.polish_long_silence_seconds,
+        artifacts_dir=settings.output_root / "artifacts" / audio_id / "polish",
+    )
+    markdown = _render_markdown_with_frontmatter(
+        body=markdown_body,
+        canonical=canonical,
+        source_file=source_file,
+        providers=providers,
+        reconciler_model=settings.reconciler_model,
+        pipeline_version=settings.pipeline_version,
+    )
 
     final_md = settings.output_root / "final" / f"{audio_id}.md"
     final_json = settings.output_root / "final" / f"{audio_id}.json"

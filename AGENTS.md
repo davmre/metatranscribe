@@ -8,7 +8,7 @@ The pipeline is designed to:
 - transcribe with multiple providers,
 - reconcile transcripts in chunks,
 - mechanically merge to canonical timeline JSON,
-- optionally run a final LLM polish pass to produce readable Markdown.
+- run a final LLM polish pass to produce readable Markdown.
 
 ## High-Level Flow
 1. `ingest`:
@@ -91,7 +91,6 @@ Reconciliation:
 - `RECONCILER_MODEL`
 
 Polish:
-- `ENABLE_POLISH_PASS`
 - `POLISH_PROVIDER`
 - `POLISH_MODEL`
 - `POLISH_LONG_SILENCE_SECONDS`

@@ -32,8 +32,7 @@ def main() -> None:
     settings = load_settings()
     configure_logging(settings.logs_dir / "pipeline.log", settings.log_level)
     validate_reconciler_credentials(settings)
-    if settings.enable_polish_pass:
-        validate_polish_credentials(settings)
+    validate_polish_credentials(settings)
 
     store = StateStore(settings.state_db_path)
 

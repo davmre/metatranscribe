@@ -14,8 +14,7 @@ def main() -> None:
     configure_logging(settings.logs_dir / "pipeline.log", settings.log_level)
     validate_provider_credentials(settings)
     validate_reconciler_credentials(settings)
-    if settings.enable_polish_pass:
-        validate_polish_credentials(settings)
+    validate_polish_credentials(settings)
 
     succeeded, failed = run_pipeline(settings)
     print(f"succeeded={succeeded} failed={failed}")

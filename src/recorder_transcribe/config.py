@@ -26,13 +26,9 @@ class Settings:
     transcribe_chunk_seconds: int
     reconciler_model: str
     reconciler_provider: str
-    enable_polish_pass: bool
     polish_provider: str
     polish_model: str
     polish_long_silence_seconds: int
-    output_style: str
-    paragraph_gap_seconds: int
-    paragraph_max_chars: int
     log_level: str
     pipeline_version: str
 
@@ -81,13 +77,9 @@ def load_settings(dotenv_path: str | None = None) -> Settings:
         transcribe_chunk_seconds=int(os.getenv("TRANSCRIBE_CHUNK_SECONDS", "540")),
         reconciler_model=os.getenv("RECONCILER_MODEL", "gpt-5"),
         reconciler_provider=os.getenv("RECONCILER_PROVIDER", "openai"),
-        enable_polish_pass=os.getenv("ENABLE_POLISH_PASS", "true").strip().lower() in {"1", "true", "yes", "on"},
         polish_provider=os.getenv("POLISH_PROVIDER", os.getenv("RECONCILER_PROVIDER", "openai")),
         polish_model=os.getenv("POLISH_MODEL", os.getenv("RECONCILER_MODEL", "gpt-5")),
         polish_long_silence_seconds=int(os.getenv("POLISH_LONG_SILENCE_SECONDS", "90")),
-        output_style=os.getenv("OUTPUT_STYLE", "paragraph"),
-        paragraph_gap_seconds=int(os.getenv("PARAGRAPH_GAP_SECONDS", "20")),
-        paragraph_max_chars=int(os.getenv("PARAGRAPH_MAX_CHARS", "600")),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         pipeline_version=os.getenv("PIPELINE_VERSION", "0.1.0"),
     )
