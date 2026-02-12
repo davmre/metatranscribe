@@ -24,6 +24,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Re-run export/polish from existing canonical artifacts")
     parser.add_argument("--audio-id", default=None, help="Single audio_id to re-export")
     parser.add_argument("--all", action="store_true", help="Re-export all audio_ids with canonical.json")
+    parser.add_argument("--dry-run", default=False, action="store_true", help="Write polish prompts only; no model call or output writes")
     args = parser.parse_args()
 
     if not args.audio_id and not args.all:
@@ -37,8 +38,11 @@ def main() -> None:
     store = StateStore(settings.state_db_path)
 
     if args.audio_id:
-        export_step(settings, store, args.audio_id)
-        print(f"reexported={args.audio_id}")
+        export_step(settings, store, args.audio_id, dry_run=args.dry_run)
+        if args.dry_run:
+            print(f"dry_run_reexported={args.audio_id}")
+        else:
+            print(f"reexported={args.audio_id}")
         return
 
     audio_ids = _discover_audio_ids_from_canonical(settings.output_root / "artifacts")
@@ -48,11 +52,17 @@ def main() -> None:
 
     count = 0
     for audio_id in audio_ids:
-        export_step(settings, store, audio_id)
-        print(f"reexported={audio_id}")
+        export_step(settings, store, audio_id, dry_run=args.dry_run)
+        if args.dry_run:
+            print(f"dry_run_reexported={audio_id}")
+        else:
+            print(f"reexported={audio_id}")
         count += 1
 
-    print(f"reexported_total={count}")
+    if args.dry_run:
+        print(f"dry_run_reexported_total={count}")
+    else:
+        print(f"reexported_total={count}")
 
 
 if __name__ == "__main__":

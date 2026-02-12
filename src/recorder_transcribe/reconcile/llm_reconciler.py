@@ -6,9 +6,12 @@ import re
 import time
 from pathlib import Path
 
-import requests
-from requests import HTTPError
-
+from recorder_transcribe.llm.http_client import (
+    extract_anthropic_text,
+    extract_openai_message_text,
+    post_anthropic_message,
+    post_openai_chat_completion,
+)
 from recorder_transcribe.models import CanonicalTranscript, ProviderTranscript
 from recorder_transcribe.reconcile.prompt_builder import build_reconciliation_prompt
 
@@ -64,64 +67,35 @@ class LLMReconciler:
 
     def _call_openai(self, prompt: str) -> str:
         logger = logging.getLogger(__name__)
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        body = {
-            "model": self.model,
-            "temperature": 0,
-            "messages": [
-                {"role": "system", "content": "Let's reconcile some transcriptions!"},
-                {"role": "user", "content": prompt},
-            ],
-            "response_format": {"type": "json_object"},
-        }
         logger.info("OpenAI reconciliation request started model=%s", self.model)
         started = time.perf_counter()
-        response = requests.post(url, headers=headers, json=body, timeout=600)
-        elapsed = time.perf_counter() - started
-        _raise_for_status_with_body(response)
-        logger.info(
-            "OpenAI reconciliation request finished model=%s status=%s elapsed_sec=%.2f",
-            self.model,
-            response.status_code,
-            elapsed,
+        payload = post_openai_chat_completion(
+            api_key=self.api_key,
+            model=self.model,
+            system_prompt="Let's reconcile some transcriptions!",
+            user_prompt=prompt,
+            temperature=0,
+            response_format={"type": "json_object"},
         )
-        payload = response.json()
-        return payload["choices"][0]["message"]["content"]
+        elapsed = time.perf_counter() - started
+        logger.info("OpenAI reconciliation request finished model=%s elapsed_sec=%.2f", self.model, elapsed)
+        return extract_openai_message_text(payload)
 
     def _call_anthropic(self, prompt: str) -> str:
         logger = logging.getLogger(__name__)
-        url = "https://api.anthropic.com/v1/messages"
-        headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
-        body = {
-            "model": self.model,
-            "max_tokens": 8192,
-            "temperature": 0,
-            "system": "Let's reconcile some transcriptions! Please return strict JSON only.",
-            "messages": [{"role": "user", "content": prompt}],
-        }
         logger.info("Anthropic reconciliation request started model=%s", self.model)
         started = time.perf_counter()
-        response = requests.post(url, headers=headers, json=body, timeout=600)
-        elapsed = time.perf_counter() - started
-        _raise_for_status_with_body(response)
-        logger.info(
-            "Anthropic reconciliation request finished model=%s status=%s elapsed_sec=%.2f",
-            self.model,
-            response.status_code,
-            elapsed,
+        payload = post_anthropic_message(
+            api_key=self.api_key,
+            model=self.model,
+            system_prompt="Let's reconcile some transcriptions! Please return strict JSON only.",
+            user_prompt=prompt,
+            temperature=0,
+            max_tokens=8192,
         )
-        payload = response.json()
-        parts = payload.get("content", [])
-        texts = [part.get("text", "") for part in parts if part.get("type") == "text"]
-        return "\n".join(texts).strip()
+        elapsed = time.perf_counter() - started
+        logger.info("Anthropic reconciliation request finished model=%s elapsed_sec=%.2f", self.model, elapsed)
+        return extract_anthropic_text(payload)
 
     def _repair_json(self, original_prompt: str, bad_output: str) -> dict:
         logger = logging.getLogger(__name__)
@@ -160,14 +134,6 @@ class LLMReconciler:
 def save_canonical_transcript(canonical: CanonicalTranscript, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(canonical.model_dump(), indent=2), encoding="utf-8")
-
-
-def _raise_for_status_with_body(response: requests.Response) -> None:
-    try:
-        response.raise_for_status()
-    except HTTPError as exc:
-        detail = response.text.strip()
-        raise HTTPError(f"{exc}. Response body: {detail}", response=response) from exc
 
 
 def _extract_json_payload(text: str) -> dict:

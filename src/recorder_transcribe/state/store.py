@@ -152,11 +152,3 @@ class StateStore:
                     json.dumps(summary or {}),
                 ),
             )
-
-    def list_provider_artifacts(self, audio_id: str) -> dict[str, str]:
-        with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT provider_name, artifact_path FROM provider_runs WHERE audio_id = ?",
-                (audio_id,),
-            ).fetchall()
-        return {row["provider_name"]: row["artifact_path"] for row in rows}

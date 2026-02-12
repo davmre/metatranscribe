@@ -69,11 +69,3 @@ class AudioFileRecord(BaseModel):
     retry_count: int = 0
     error: str | None = None
 
-
-class PipelineSummary(BaseModel):
-    run_id: str
-    started_at: str
-    completed_at: str
-    processed: int
-    succeeded: int
-    failed: int

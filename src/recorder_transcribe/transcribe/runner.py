@@ -37,7 +37,8 @@ def _chunk_provider_path(artifacts_root: Path, chunk_index: int, provider_name: 
 def save_provider_chunk_transcript(transcript: ProviderTranscript, artifacts_root: Path, chunk_index: int) -> Path:
     path = _chunk_provider_path(artifacts_root, chunk_index, transcript.provider_name)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(transcript.model_dump(), indent=2), encoding="utf-8")
+    persisted = transcript.model_copy(update={"raw_payload_path": str(path)})
+    path.write_text(json.dumps(persisted.model_dump(), indent=2), encoding="utf-8")
     return path
 
 

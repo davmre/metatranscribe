@@ -4,7 +4,6 @@ import json
 
 from recorder_transcribe.models import ProviderTranscript, Segment
 
-MAX_PROVIDER_RAW_TEXT_CHARS = 4000
 SEGMENT_MERGE_GAP_SECONDS = 1.2
 MERGED_SEGMENT_MAX_CHARS = 280
 MAX_MERGED_SEGMENTS = 120
@@ -15,9 +14,6 @@ def build_reconciliation_prompt(audio_id: str, transcripts: list[ProviderTranscr
     for transcript in transcripts:
         compact_segments = _compact_segments(transcript.segments)
         has_timing = any(seg.end_sec > seg.start_sec for seg in compact_segments)
-        raw_text = transcript.raw_text.strip()
-        if len(raw_text) > MAX_PROVIDER_RAW_TEXT_CHARS:
-            raw_text = raw_text[:MAX_PROVIDER_RAW_TEXT_CHARS].rstrip() + " ..."
 
         provider_payload.append(
             {
@@ -25,7 +21,6 @@ def build_reconciliation_prompt(audio_id: str, transcripts: list[ProviderTranscr
                 "language": transcript.language,
                 "duration_sec": transcript.duration_sec,
                 "has_timed_segments": has_timing,
-                # "raw_text": raw_text,
                 "segment_count_original": len(transcript.segments),
                 "segment_count_compact": len(compact_segments),
                 "segments": [

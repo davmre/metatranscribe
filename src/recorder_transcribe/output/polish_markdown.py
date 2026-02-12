@@ -5,9 +5,12 @@ import logging
 import time
 from pathlib import Path
 
-import requests
-from requests import HTTPError
-
+from recorder_transcribe.llm.http_client import (
+    extract_anthropic_text,
+    extract_openai_message_text,
+    post_anthropic_message,
+    post_openai_chat_completion,
+)
 from recorder_transcribe.models import CanonicalTranscript
 
 logger = logging.getLogger(__name__)
@@ -20,9 +23,14 @@ def render_polished_markdown(
     api_key: str,
     long_silence_seconds: int,
     artifacts_dir: Path | None = None,
+    dry_run: bool = False,
 ) -> str:
     prompt = _build_polish_prompt(canonical, long_silence_seconds)
     _write_artifact(artifacts_dir, "request_prompt.json", prompt)
+
+    if dry_run:
+        logger.info("Polish dry-run: wrote request prompt only audio_id=%s", canonical.audio_id)
+        return ""
 
     response_text = _call_model(provider, model, api_key, prompt)
     _write_artifact(artifacts_dir, "response_raw.md", response_text)
@@ -82,53 +90,34 @@ def _call_model(provider: str, model: str, api_key: str, prompt: str) -> str:
 
 
 def _call_openai(model: str, api_key: str, prompt: str) -> str:
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    body = {
-        "model": model,
-        "temperature": 0.2,
-        "messages": [
-            {"role": "system", "content": "You are an expert transcript editor."},
-            {"role": "user", "content": prompt},
-        ],
-    }
     logger.info("OpenAI polish request started model=%s", model)
     started = time.perf_counter()
-    response = requests.post(url, headers=headers, json=body, timeout=600)
+    payload = post_openai_chat_completion(
+        api_key=api_key,
+        model=model,
+        system_prompt="You are an expert transcript editor.",
+        user_prompt=prompt,
+        temperature=0.2,
+    )
     elapsed = time.perf_counter() - started
-    _raise_for_status_with_body(response)
-    logger.info("OpenAI polish request finished model=%s status=%s elapsed_sec=%.2f", model, response.status_code, elapsed)
-    payload = response.json()
-    return payload["choices"][0]["message"]["content"]
+    logger.info("OpenAI polish request finished model=%s elapsed_sec=%.2f", model, elapsed)
+    return extract_openai_message_text(payload)
 
 
 def _call_anthropic(model: str, api_key: str, prompt: str) -> str:
-    url = "https://api.anthropic.com/v1/messages"
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
-    body = {
-        "model": model,
-        "max_tokens": 65536,
-        "temperature": 0.2,
-        "system": "You are an expert transcript editor. Return markdown only.",
-        "messages": [{"role": "user", "content": prompt}],
-    }
     logger.info("Anthropic polish request started model=%s", model)
     started = time.perf_counter()
-    response = requests.post(url, headers=headers, json=body, timeout=600)
+    payload = post_anthropic_message(
+        api_key=api_key,
+        model=model,
+        system_prompt="You are an expert transcript editor. Return markdown only.",
+        user_prompt=prompt,
+        temperature=0.2,
+        max_tokens=65536,
+    )
     elapsed = time.perf_counter() - started
-    _raise_for_status_with_body(response)
-    logger.info("Anthropic polish request finished model=%s status=%s elapsed_sec=%.2f", model, response.status_code, elapsed)
-    payload = response.json()
-    parts = payload.get("content", [])
-    texts = [part.get("text", "") for part in parts if part.get("type") == "text"]
-    return "\n".join(texts).strip()
+    logger.info("Anthropic polish request finished model=%s elapsed_sec=%.2f", model, elapsed)
+    return extract_anthropic_text(payload)
 
 
 def _strip_markdown_fences(text: str) -> str:
@@ -138,14 +127,6 @@ def _strip_markdown_fences(text: str) -> str:
         if len(lines) >= 3:
             return "\n".join(lines[1:-1]).strip()
     return raw
-
-
-def _raise_for_status_with_body(response: requests.Response) -> None:
-    try:
-        response.raise_for_status()
-    except HTTPError as exc:
-        detail = response.text.strip()
-        raise HTTPError(f"{exc}. Response body: {detail}", response=response) from exc
 
 
 def _write_artifact(artifacts_dir: Path | None, filename: str, content: str) -> None:

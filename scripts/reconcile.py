@@ -18,12 +18,18 @@ def main() -> None:
 
     if args.audio_id:
         reconcile_step(settings, store, args.audio_id, dry_run=args.dry_run)
-        print(f"reconciled={args.audio_id}")
+        if args.dry_run:
+            print(f"dry_run_reconciled={args.audio_id}")
+        else:
+            print(f"reconciled={args.audio_id}")
         return
 
     for record in store.get_records(status="transcribed"):
         reconcile_step(settings, store, record.audio_id, dry_run=args.dry_run)
-        print(f"reconciled={record.audio_id}")
+        if args.dry_run:
+            print(f"dry_run_reconciled={record.audio_id}")
+        else:
+            print(f"reconciled={record.audio_id}")
 
 
 if __name__ == "__main__":

@@ -49,4 +49,5 @@ def test_chunk_provider_artifact_round_trip(tmp_path: Path) -> None:
     assert path.name == "openai.json"
     assert len(loaded) == 1
     assert loaded[0].provider_name == "openai"
+    assert loaded[0].raw_payload_path == str(path)
     assert providers == ["openai"]

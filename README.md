@@ -29,8 +29,10 @@ Modular pipeline to process Google Pixel Recorder exports and generate high-qual
 python scripts/ingest.py
 python scripts/transcribe.py --audio-id <audio_id>
 python scripts/reconcile.py --audio-id <audio_id>
+python scripts/reconcile.py --audio-id <audio_id> --dry-run
 python scripts/export.py --audio-id <audio_id>
 python scripts/reexport.py --audio-id <audio_id>
+python scripts/reexport.py --audio-id <audio_id> --dry-run
 ```
 
 Batch mode by status:
@@ -39,6 +41,7 @@ python scripts/transcribe.py
 python scripts/reconcile.py
 python scripts/export.py
 python scripts/reexport.py --all
+python scripts/reexport.py --all --dry-run
 ```
 
 `reexport.py` reruns only final export/polish using existing `canonical.json` artifacts.
@@ -67,7 +70,10 @@ Runs every 4 hours:
 - Transcription chunk size is configurable with `TRANSCRIBE_CHUNK_SECONDS` (default 540s).
 - Reconciliation always uses transcription chunk boundaries from `transcribe_chunks.json`.
 - Reconciliation provider is configurable via `RECONCILER_PROVIDER=openai|anthropic`.
+- `scripts/reconcile.py --dry-run` writes per-chunk `request_prompt.json` artifacts only (no LLM call, no canonical write, no status update).
 - Export always runs the polish pass to generate human-readable Markdown.
 - Polish provider/model are configurable via `POLISH_PROVIDER` and `POLISH_MODEL`.
+- `scripts/reexport.py --dry-run` writes `polish/request_prompt.json` only (no LLM call, no final output writes, no status update).
 - Increase verbosity with `LOG_LEVEL=DEBUG` in `.env`.
 - Silence markers are generated algorithmically from timeline gaps (default threshold 90 seconds).
+- Failed records stop auto-retrying once `retry_count >= MAX_RETRIES`.

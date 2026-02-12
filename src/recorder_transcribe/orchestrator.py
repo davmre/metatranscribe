@@ -106,9 +106,7 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
             chunk_audio_id = f"{audio_id}__chunk_{chunk_index:03d}"
             transcript = provider.transcribe(chunk_audio_id, chunk.path, settings.language_hint)
             transcript = _with_global_segment_offsets(audio_id, transcript, chunk)
-            path = save_provider_chunk_transcript(transcript, artifacts_root, chunk_index)
-            transcript.raw_payload_path = str(path)
-            path.write_text(json.dumps(transcript.model_dump(), indent=2), encoding="utf-8")
+            save_provider_chunk_transcript(transcript, artifacts_root, chunk_index)
             provider_segments += len(transcript.segments)
 
         store.save_provider_run(
@@ -129,6 +127,8 @@ def reconcile_step(settings: Settings, store: StateStore, audio_id: str, dry_run
         settings.reconciler_provider,
         settings.reconciler_model,
     )
+    if dry_run:
+        logger.info("Reconciliation running in dry-run mode audio_id=%s", audio_id)
     artifacts_root = settings.output_root / "artifacts" / audio_id
     windows = _load_transcription_chunk_windows(artifacts_root)
     if not windows:
@@ -185,6 +185,19 @@ def reconcile_step(settings: Settings, store: StateStore, audio_id: str, dry_run
             (chunk_dir / "canonical.json").write_text(json.dumps(chunk_canonical.model_dump(), indent=2), encoding="utf-8")
             chunk_results.append(chunk_canonical)
 
+    if dry_run:
+        logger.info("Reconciliation dry-run completed audio_id=%s chunks=%d", audio_id, len(windows))
+        return CanonicalTranscript(
+            audio_id=audio_id,
+            title="Dry-run preview",
+            language=settings.language_hint,
+            duration_sec=duration_sec,
+            segments=[],
+            silence_markers=[],
+            final_text="",
+            provenance={"dry_run": True, "chunk_count": len(windows)},
+        )
+
     canonical = merge_chunk_canonicals(audio_id, chunk_results, duration_sec)
 
     canonical.silence_markers = build_silence_markers(canonical.segments, settings.silence_gap_seconds)
@@ -195,8 +208,10 @@ def reconcile_step(settings: Settings, store: StateStore, audio_id: str, dry_run
     return canonical
 
 
-def export_step(settings: Settings, store: StateStore, audio_id: str) -> None:
+def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: bool = False) -> None:
     logger.info("Export step started audio_id=%s", audio_id)
+    if dry_run:
+        logger.info("Export running in dry-run mode audio_id=%s", audio_id)
     canonical_path = settings.output_root / "artifacts" / audio_id / "canonical.json"
     payload = json.loads(canonical_path.read_text(encoding="utf-8"))
     canonical = CanonicalTranscript.model_validate(payload)
@@ -213,7 +228,11 @@ def export_step(settings: Settings, store: StateStore, audio_id: str) -> None:
         api_key=polish_api_key,
         long_silence_seconds=settings.polish_long_silence_seconds,
         artifacts_dir=settings.output_root / "artifacts" / audio_id / "polish",
+        dry_run=dry_run,
     )
+    if dry_run:
+        logger.info("Export dry-run completed audio_id=%s", audio_id)
+        return
     markdown = _render_markdown_with_frontmatter(
         body=markdown_body,
         canonical=canonical,
@@ -241,6 +260,14 @@ def run_pipeline(settings: Settings) -> tuple[int, int]:
     for record in records:
         logger.info("Processing audio_id=%s current_status=%s", record.audio_id, record.status)
         try:
+            if record.status == "failed" and record.retry_count >= settings.max_retries:
+                logger.warning(
+                    "Skipping failed audio_id=%s retry_count=%d max_retries=%d",
+                    record.audio_id,
+                    record.retry_count,
+                    settings.max_retries,
+                )
+                continue
             if record.status in {"ingested", "failed"}:
                 transcribe_step(settings, store, record.audio_id)
                 record = store.get_record(record.audio_id) or record
@@ -259,14 +286,6 @@ def run_pipeline(settings: Settings) -> tuple[int, int]:
             logger.exception("Failed audio_id=%s retry=%s", record.audio_id, retry)
 
     return succeeded, failed
-
-
-def run_summary(succeeded: int, failed: int) -> dict[str, str | int]:
-    return {
-        "started_at": datetime.now(timezone.utc).isoformat(),
-        "succeeded": succeeded,
-        "failed": failed,
-    }
 
 
 def _render_markdown_with_frontmatter(

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import time
 from pathlib import Path
@@ -133,8 +132,3 @@ def _segments_from_words(payload: dict[str, Any]) -> list[Segment]:
             )
         )
     return segments
-
-
-def save_raw_payload(payload: dict[str, Any], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
