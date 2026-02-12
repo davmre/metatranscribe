@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "recorder-transcribe"
+name = "metatranscribe"
 version = "0.1.0"
-description = "Modular pipeline for high-quality transcription of Pixel Recorder voice notes"
+description = "Modular pipeline for multi-provider audio transcription and LLM reconciliation"
 requires-python = ">=3.11"
 dependencies = [
   "pydantic>=2.6",

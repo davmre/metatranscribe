@@ -1,1 +1,0 @@
-"""Recorder transcription pipeline package."""

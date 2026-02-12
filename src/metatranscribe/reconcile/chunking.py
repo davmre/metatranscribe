@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from recorder_transcribe.models import CanonicalSegment, CanonicalTranscript
+from metatranscribe.models import CanonicalSegment, CanonicalTranscript
 
 
 @dataclass(slots=True)

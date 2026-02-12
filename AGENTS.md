@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Purpose
-This repository implements a modular transcription pipeline for Google Pixel Recorder exports, optimized for long-form notes and high-quality final transcripts.
+This repository implements a modular transcription pipeline for arbitrary audio files, optimized for long-form notes and high-quality final transcripts.
 
 The pipeline is designed to:
 - ingest audio files from a local inbox,
@@ -44,19 +44,19 @@ The pipeline is designed to:
 - `scripts/run_pipeline.py` (full orchestrated run)
 
 ## Core Modules
-- `src/recorder_transcribe/orchestrator.py`
+- `src/metatranscribe/orchestrator.py`
   - Main step orchestration and status transitions.
-- `src/recorder_transcribe/config.py`
+- `src/metatranscribe/config.py`
   - Env-backed settings and provider credential validation.
-- `src/recorder_transcribe/state/store.py`
+- `src/metatranscribe/state/store.py`
   - sqlite state store (`audio_files`, `provider_runs`).
-- `src/recorder_transcribe/transcribe/*`
+- `src/metatranscribe/transcribe/*`
   - Provider adapters and transcript normalization.
-- `src/recorder_transcribe/reconcile/*`
+- `src/metatranscribe/reconcile/*`
   - Prompt construction, LLM reconcile client, chunking + merge utilities.
-- `src/recorder_transcribe/output/*`
+- `src/metatranscribe/output/*`
   - Markdown rendering and polish pass.
-- `src/recorder_transcribe/preprocess/audio_prep.py`
+- `src/metatranscribe/preprocess/audio_prep.py`
   - ffmpeg normalization, probing, and chunk splitting.
 
 ## Artifacts and Debugging

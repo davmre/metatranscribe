@@ -5,13 +5,13 @@ import logging
 import time
 from pathlib import Path
 
-from recorder_transcribe.llm.http_client import (
+from metatranscribe.llm.http_client import (
     extract_anthropic_text,
     extract_openai_message_text,
     post_anthropic_message,
     post_openai_chat_completion,
 )
-from recorder_transcribe.models import CanonicalTranscript
+from metatranscribe.models import CanonicalTranscript
 
 logger = logging.getLogger(__name__)
 

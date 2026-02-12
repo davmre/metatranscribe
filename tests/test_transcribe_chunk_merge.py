@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from recorder_transcribe.models import ProviderTranscript, Segment
-from recorder_transcribe.orchestrator import _with_global_segment_offsets
-from recorder_transcribe.preprocess.audio_prep import AudioChunk
-from recorder_transcribe.transcribe.runner import (
+from metatranscribe.models import ProviderTranscript, Segment
+from metatranscribe.orchestrator import _with_global_segment_offsets
+from metatranscribe.preprocess.audio_prep import AudioChunk
+from metatranscribe.transcribe.runner import (
     discover_chunk_providers,
     load_provider_chunk_transcripts,
     save_provider_chunk_transcript,

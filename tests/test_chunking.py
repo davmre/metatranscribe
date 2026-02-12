@@ -1,5 +1,5 @@
-from recorder_transcribe.models import CanonicalSegment, CanonicalTranscript
-from recorder_transcribe.reconcile.chunking import merge_chunk_canonicals
+from metatranscribe.models import CanonicalSegment, CanonicalTranscript
+from metatranscribe.reconcile.chunking import merge_chunk_canonicals
 
 
 def test_merge_chunk_canonicals_dedupes_overlap() -> None:

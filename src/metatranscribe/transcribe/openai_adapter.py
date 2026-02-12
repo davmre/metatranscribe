@@ -8,9 +8,9 @@ from typing import Any
 import requests
 from requests import HTTPError
 
-from recorder_transcribe.models import ProviderTranscript, Segment
-from recorder_transcribe.preprocess.audio_prep import guess_audio_content_type
-from recorder_transcribe.transcribe.base import TranscriptionProvider
+from metatranscribe.models import ProviderTranscript, Segment
+from metatranscribe.preprocess.audio_prep import guess_audio_content_type
+from metatranscribe.transcribe.base import TranscriptionProvider
 
 
 class OpenAITranscriptionProvider(TranscriptionProvider):

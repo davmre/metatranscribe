@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-from recorder_transcribe.config import (
+from metatranscribe.config import (
     load_settings,
     validate_polish_credentials,
     validate_provider_credentials,
     validate_reconciler_credentials,
 )
-from recorder_transcribe.logging_utils import configure_logging
-from recorder_transcribe.orchestrator import run_pipeline
+from metatranscribe.logging_utils import configure_logging
+from metatranscribe.orchestrator import run_pipeline
 
 
 def main() -> None:

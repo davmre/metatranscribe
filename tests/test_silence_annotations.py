@@ -1,5 +1,5 @@
-from recorder_transcribe.models import CanonicalSegment
-from recorder_transcribe.postprocess.silence_annotations import build_silence_markers
+from metatranscribe.models import CanonicalSegment
+from metatranscribe.postprocess.silence_annotations import build_silence_markers
 
 
 def test_build_silence_markers_threshold() -> None:

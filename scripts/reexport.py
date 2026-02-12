@@ -4,10 +4,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from recorder_transcribe.config import load_settings, validate_polish_credentials, validate_reconciler_credentials
-from recorder_transcribe.logging_utils import configure_logging
-from recorder_transcribe.orchestrator import export_step
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.config import load_settings, validate_polish_credentials, validate_reconciler_credentials
+from metatranscribe.logging_utils import configure_logging
+from metatranscribe.orchestrator import export_step
+from metatranscribe.state.store import StateStore
 
 
 def _discover_audio_ids_from_canonical(artifacts_root: Path) -> list[str]:

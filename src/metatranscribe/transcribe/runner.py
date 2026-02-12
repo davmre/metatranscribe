@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from recorder_transcribe.config import Settings
-from recorder_transcribe.models import ProviderTranscript
-from recorder_transcribe.transcribe.base import TranscriptionProvider
-from recorder_transcribe.transcribe.deepgram_adapter import DeepgramTranscriptionProvider
-from recorder_transcribe.transcribe.local_whisper_adapter import LocalWhisperProvider
-from recorder_transcribe.transcribe.openai_adapter import OpenAITranscriptionProvider
+from metatranscribe.config import Settings
+from metatranscribe.models import ProviderTranscript
+from metatranscribe.transcribe.base import TranscriptionProvider
+from metatranscribe.transcribe.deepgram_adapter import DeepgramTranscriptionProvider
+from metatranscribe.transcribe.local_whisper_adapter import LocalWhisperProvider
+from metatranscribe.transcribe.openai_adapter import OpenAITranscriptionProvider
 
 
 def build_providers(settings: Settings) -> list[TranscriptionProvider]:

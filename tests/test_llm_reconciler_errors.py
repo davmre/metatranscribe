@@ -1,7 +1,7 @@
 import pytest
 from requests import HTTPError
 
-from recorder_transcribe.llm.http_client import raise_for_status_with_body
+from metatranscribe.llm.http_client import raise_for_status_with_body
 
 
 class _DummyResponse:

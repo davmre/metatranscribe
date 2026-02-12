@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-from recorder_transcribe.config import Settings
-from recorder_transcribe.models import AudioFileRecord, CanonicalTranscript, ProviderTranscript, Segment
-from recorder_transcribe.orchestrator import export_step, reconcile_step, run_pipeline
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.config import Settings
+from metatranscribe.models import AudioFileRecord, CanonicalTranscript, ProviderTranscript, Segment
+from metatranscribe.orchestrator import export_step, reconcile_step, run_pipeline
+from metatranscribe.state.store import StateStore
 
 
 def _settings(tmp_path: Path) -> Settings:
@@ -132,7 +132,7 @@ def test_run_pipeline_skips_failed_records_at_retry_cap(tmp_path: Path, monkeypa
     def _fake_transcribe_step(*args, **kwargs) -> None:  # noqa: ANN002, ANN003
         called["transcribe"] = True
 
-    monkeypatch.setattr("recorder_transcribe.orchestrator.transcribe_step", _fake_transcribe_step)
+    monkeypatch.setattr("metatranscribe.orchestrator.transcribe_step", _fake_transcribe_step)
     succeeded, failed = run_pipeline(settings)
 
     assert succeeded == 0

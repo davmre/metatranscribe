@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from recorder_transcribe.models import AudioFileRecord
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.models import AudioFileRecord
+from metatranscribe.state.store import StateStore
 
 
 def test_insert_audio_dedupes_by_hash(tmp_path: Path) -> None:

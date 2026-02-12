@@ -6,14 +6,14 @@ import re
 import time
 from pathlib import Path
 
-from recorder_transcribe.llm.http_client import (
+from metatranscribe.llm.http_client import (
     extract_anthropic_text,
     extract_openai_message_text,
     post_anthropic_message,
     post_openai_chat_completion,
 )
-from recorder_transcribe.models import CanonicalTranscript, ProviderTranscript
-from recorder_transcribe.reconcile.prompt_builder import build_reconciliation_prompt
+from metatranscribe.models import CanonicalTranscript, ProviderTranscript
+from metatranscribe.reconcile.prompt_builder import build_reconciliation_prompt
 
 
 class LLMReconciler:

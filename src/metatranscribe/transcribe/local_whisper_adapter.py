@@ -5,8 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from recorder_transcribe.models import ProviderTranscript, Segment
-from recorder_transcribe.transcribe.base import TranscriptionProvider
+from metatranscribe.models import ProviderTranscript, Segment
+from metatranscribe.transcribe.base import TranscriptionProvider
 
 
 class LocalWhisperProvider(TranscriptionProvider):

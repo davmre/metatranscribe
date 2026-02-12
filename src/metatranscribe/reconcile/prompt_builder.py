@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from recorder_transcribe.models import ProviderTranscript, Segment
+from metatranscribe.models import ProviderTranscript, Segment
 
 SEGMENT_MERGE_GAP_SECONDS = 1.2
 MERGED_SEGMENT_MAX_CHARS = 280

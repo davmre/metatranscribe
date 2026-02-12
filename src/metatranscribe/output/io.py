@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from recorder_transcribe.models import CanonicalTranscript
+from metatranscribe.models import CanonicalTranscript
 
 
 def write_outputs(canonical: CanonicalTranscript, markdown_path: Path, json_path: Path, markdown_text: str) -> None:

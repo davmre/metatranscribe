@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from recorder_transcribe.models import CanonicalTranscript
-from recorder_transcribe.output.io import write_outputs
+from metatranscribe.models import CanonicalTranscript
+from metatranscribe.output.io import write_outputs
 
 
 def test_write_outputs_writes_markdown_and_json(tmp_path: Path) -> None:

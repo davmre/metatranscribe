@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from recorder_transcribe.models import ProviderTranscript
+from metatranscribe.models import ProviderTranscript
 
 
 class TranscriptionProvider(ABC):

@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from recorder_transcribe.models import ProviderTranscript, Segment
-from recorder_transcribe.reconcile.llm_reconciler import LLMReconciler
+from metatranscribe.models import ProviderTranscript, Segment
+from metatranscribe.reconcile.llm_reconciler import LLMReconciler
 
 
 class _DummyReconciler(LLMReconciler):

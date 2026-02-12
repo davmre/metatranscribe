@@ -5,31 +5,31 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from recorder_transcribe.config import (
+from metatranscribe.config import (
     Settings,
     resolve_llm_api_key,
     validate_polish_credentials,
     validate_reconciler_credentials,
 )
-from recorder_transcribe.ingest.manual_inbox import get_original_audio_path, ingest_new_files
-from recorder_transcribe.models import CanonicalTranscript, ProviderTranscript, Segment
-from recorder_transcribe.output.io import write_outputs
-from recorder_transcribe.output.polish_markdown import render_polished_markdown
-from recorder_transcribe.postprocess.silence_annotations import build_silence_markers
-from recorder_transcribe.preprocess.audio_prep import (
+from metatranscribe.ingest.manual_inbox import get_original_audio_path, ingest_new_files
+from metatranscribe.models import CanonicalTranscript, ProviderTranscript, Segment
+from metatranscribe.output.io import write_outputs
+from metatranscribe.output.polish_markdown import render_polished_markdown
+from metatranscribe.postprocess.silence_annotations import build_silence_markers
+from metatranscribe.preprocess.audio_prep import (
     AudioChunk,
     has_ffmpeg,
     normalize_audio,
     probe_duration_sec,
     split_audio_into_chunks,
 )
-from recorder_transcribe.reconcile.chunking import (
+from metatranscribe.reconcile.chunking import (
     ChunkWindow,
     merge_chunk_canonicals,
 )
-from recorder_transcribe.reconcile.llm_reconciler import LLMReconciler, save_canonical_transcript
-from recorder_transcribe.state.store import StateStore
-from recorder_transcribe.transcribe.runner import (
+from metatranscribe.reconcile.llm_reconciler import LLMReconciler, save_canonical_transcript
+from metatranscribe.state.store import StateStore
+from metatranscribe.transcribe.runner import (
     build_providers,
     discover_chunk_providers,
     load_provider_chunk_transcripts,

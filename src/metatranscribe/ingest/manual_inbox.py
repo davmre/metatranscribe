@@ -5,8 +5,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from recorder_transcribe.models import AudioFileRecord
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.models import AudioFileRecord
+from metatranscribe.state.store import StateStore
 
 AUDIO_EXTENSIONS = {".m4a", ".mp3", ".wav", ".ogg", ".aac", ".flac"}
 

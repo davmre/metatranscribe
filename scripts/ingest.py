@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from recorder_transcribe.config import load_settings
-from recorder_transcribe.ingest.manual_inbox import ingest_new_files
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.config import load_settings
+from metatranscribe.ingest.manual_inbox import ingest_new_files
+from metatranscribe.state.store import StateStore
 
 
 def main() -> None:

@@ -1,7 +1,7 @@
 import pytest
 
-from recorder_transcribe.config import load_settings, validate_reconciler_credentials
-from recorder_transcribe.reconcile.llm_reconciler import LLMReconciler
+from metatranscribe.config import load_settings, validate_reconciler_credentials
+from metatranscribe.reconcile.llm_reconciler import LLMReconciler
 
 
 def test_validate_reconciler_credentials_openai(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:

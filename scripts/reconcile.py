@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 
-from recorder_transcribe.config import load_settings, validate_reconciler_credentials
-from recorder_transcribe.orchestrator import reconcile_step
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.config import load_settings, validate_reconciler_credentials
+from metatranscribe.orchestrator import reconcile_step
+from metatranscribe.state.store import StateStore
 
 
 def main() -> None:

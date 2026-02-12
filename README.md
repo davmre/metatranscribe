@@ -1,6 +1,6 @@
-# Recorder Transcribe Pipeline
+# MetaTranscribe Pipeline
 
-Modular pipeline to process Google Pixel Recorder exports and generate high-quality, timestamped transcripts.
+Modular pipeline to process arbitrary audio files and generate high-quality, timestamped transcripts.
 
 ## Features
 - Manual inbox ingest (`data/inbox`) with SHA256 dedupe
@@ -62,7 +62,7 @@ python scripts/run_pipeline.py
 ## Cron Example
 Runs every 4 hours:
 ```cron
-0 */4 * * * cd /Users/dave/code/recorder_transcribe && /Users/dave/code/recorder_transcribe/.venv/bin/python scripts/run_pipeline.py >> logs/cron.log 2>&1
+0 */4 * * * cd /Users/dave/code/metatranscribe && /Users/dave/code/metatranscribe/.venv/bin/python scripts/run_pipeline.py >> logs/cron.log 2>&1
 ```
 
 ## Notes

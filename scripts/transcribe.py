@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 
-from recorder_transcribe.config import load_settings, validate_provider_credentials
-from recorder_transcribe.logging_utils import configure_logging
-from recorder_transcribe.orchestrator import transcribe_step
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.config import load_settings, validate_provider_credentials
+from metatranscribe.logging_utils import configure_logging
+from metatranscribe.orchestrator import transcribe_step
+from metatranscribe.state.store import StateStore
 
 
 def main() -> None:

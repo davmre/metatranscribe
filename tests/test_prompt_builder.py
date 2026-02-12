@@ -1,7 +1,7 @@
 import json
 
-from recorder_transcribe.models import ProviderTranscript, Segment
-from recorder_transcribe.reconcile.prompt_builder import build_reconciliation_prompt
+from metatranscribe.models import ProviderTranscript, Segment
+from metatranscribe.reconcile.prompt_builder import build_reconciliation_prompt
 
 
 def test_prompt_builder_compacts_segments_and_marks_timing() -> None:

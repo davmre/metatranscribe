@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from recorder_transcribe.models import CanonicalSegment, SilenceMarker
+from metatranscribe.models import CanonicalSegment, SilenceMarker
 
 
 def _format_gap_label(duration_sec: float) -> str:

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from requests import HTTPError
 
-from recorder_transcribe.transcribe.openai_adapter import OpenAITranscriptionProvider, _build_form_data
+from metatranscribe.transcribe.openai_adapter import OpenAITranscriptionProvider, _build_form_data
 
 
 def test_build_form_data_whisper_uses_verbose_json() -> None:
@@ -32,7 +32,7 @@ def test_transcribe_surfaces_response_body_on_http_error(monkeypatch: pytest.Mon
     def fake_post(*args, **kwargs):  # noqa: ANN002, ANN003
         return DummyResponse()
 
-    monkeypatch.setattr("recorder_transcribe.transcribe.openai_adapter.requests.post", fake_post)
+    monkeypatch.setattr("metatranscribe.transcribe.openai_adapter.requests.post", fake_post)
 
     audio = tmp_path / "a.wav"
     audio.write_bytes(b"wav")

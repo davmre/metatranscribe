@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from recorder_transcribe.reconcile.llm_reconciler import _extract_json_payload
+from metatranscribe.reconcile.llm_reconciler import _extract_json_payload
 
 
 def test_extract_json_payload_plain_object() -> None:

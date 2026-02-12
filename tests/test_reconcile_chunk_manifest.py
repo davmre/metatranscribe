@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from recorder_transcribe.models import ProviderTranscript
-from recorder_transcribe.orchestrator import (
+from metatranscribe.models import ProviderTranscript
+from metatranscribe.orchestrator import (
     _load_transcription_chunk_windows,
     _manifest_duration_sec,
     _validate_chunk_provider_completeness,

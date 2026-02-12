@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 
-from recorder_transcribe.config import load_settings
-from recorder_transcribe.orchestrator import export_step
-from recorder_transcribe.state.store import StateStore
+from metatranscribe.config import load_settings
+from metatranscribe.orchestrator import export_step
+from metatranscribe.state.store import StateStore
 
 
 def main() -> None:
