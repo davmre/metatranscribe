@@ -114,7 +114,6 @@ def _call_anthropic(model: str, api_key: str, prompt: str) -> str:
     }
     body = {
         "model": model,
-        "max_tokens": 8192,
         "temperature": 0.2,
         "system": "You are an expert transcript editor. Return markdown only.",
         "messages": [{"role": "user", "content": prompt}],
