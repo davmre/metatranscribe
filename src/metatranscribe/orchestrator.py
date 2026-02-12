@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -118,6 +119,7 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
         )
 
     store.update_status(audio_id, "transcribed")
+    _cleanup_processed_audio(settings.data_root / "processed" / audio_id, audio_id)
     logger.info("Transcription step completed audio_id=%s providers=%d", audio_id, len(providers))
 
 
@@ -217,7 +219,7 @@ def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: b
     payload = json.loads(canonical_path.read_text(encoding="utf-8"))
     canonical = CanonicalTranscript.model_validate(payload)
 
-    source_file = get_original_audio_path(settings.data_root / "raw", audio_id).name
+    source_file = _resolve_source_filename(settings, store, audio_id)
     providers = discover_chunk_providers(settings.output_root / "artifacts" / audio_id)
     validate_polish_credentials(settings)
     polish_provider = settings.polish_provider.strip().lower()
@@ -263,6 +265,13 @@ def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: b
         final_md,
         str(published_path) if published_path else "none",
     )
+
+
+def _resolve_source_filename(settings: Settings, store: StateStore, audio_id: str) -> str:
+    record = store.get_record(audio_id)
+    if record and record.source_path.strip():
+        return Path(record.source_path).name
+    return get_original_audio_path(settings.data_root / "raw", audio_id).name
 
 
 def run_pipeline(settings: Settings) -> tuple[int, int]:
@@ -355,6 +364,21 @@ def _write_publish_artifact(
     )
 
 
+def _cleanup_processed_audio(processed_dir: Path, audio_id: str) -> None:
+    if not processed_dir.exists():
+        return
+    try:
+        shutil.rmtree(processed_dir)
+        logger.info("Cleaned processed audio files audio_id=%s path=%s", audio_id, processed_dir)
+    except OSError:
+        logger.warning(
+            "Failed to clean processed audio files audio_id=%s path=%s",
+            audio_id,
+            processed_dir,
+            exc_info=True,
+        )
+
+
 def _write_transcription_chunk_manifest(artifacts_root: Path, chunks: list[AudioChunk]) -> None:
     artifacts_root.mkdir(parents=True, exist_ok=True)
     manifest = [
@@ -362,7 +386,6 @@ def _write_transcription_chunk_manifest(artifacts_root: Path, chunks: list[Audio
             "index": idx,
             "start_sec": chunk.start_sec,
             "end_sec": chunk.end_sec,
-            "path": str(chunk.path),
         }
         for idx, chunk in enumerate(chunks)
     ]
