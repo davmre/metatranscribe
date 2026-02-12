@@ -73,7 +73,7 @@ class LLMReconciler:
             "model": self.model,
             "temperature": 0,
             "messages": [
-                {"role": "system", "content": "You are a transcription reconciliation engine."},
+                {"role": "system", "content": "Let's reconcile some transcriptions!"},
                 {"role": "user", "content": prompt},
             ],
             "response_format": {"type": "json_object"},
@@ -104,7 +104,7 @@ class LLMReconciler:
             "model": self.model,
             "max_tokens": 8192,
             "temperature": 0,
-            "system": "You are a transcription reconciliation engine. Return strict JSON only.",
+            "system": "Let's reconcile some transcriptions! Please return strict JSON only.",
             "messages": [{"role": "user", "content": prompt}],
         }
         logger.info("Anthropic reconciliation request started model=%s", self.model)

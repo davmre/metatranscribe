@@ -25,7 +25,7 @@ def build_reconciliation_prompt(audio_id: str, transcripts: list[ProviderTranscr
                 "language": transcript.language,
                 "duration_sec": transcript.duration_sec,
                 "has_timed_segments": has_timing,
-                "raw_text": raw_text,
+                # "raw_text": raw_text,
                 "segment_count_original": len(transcript.segments),
                 "segment_count_compact": len(compact_segments),
                 "segments": [
