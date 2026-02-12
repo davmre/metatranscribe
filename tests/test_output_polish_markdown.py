@@ -22,7 +22,7 @@ def test_render_polished_markdown_parses_json(monkeypatch, tmp_path: Path) -> No
     monkeypatch.setattr(
         "metatranscribe.output.polish_markdown._call_model",
         lambda provider, model, api_key, prompt: json.dumps(
-            {"suggested_name": "Weekly Sync", "markdown": "# Heading\n\nBody"}
+            {"filename": "Weekly Sync", "markdown": "# Heading\n\nBody"}
         ),
     )
 
@@ -44,7 +44,7 @@ def test_render_polished_markdown_parses_json(monkeypatch, tmp_path: Path) -> No
 def test_render_polished_markdown_parses_fenced_json(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         "metatranscribe.output.polish_markdown._call_model",
-        lambda provider, model, api_key, prompt: '```json\n{"suggested_name":"Team Notes","markdown":"Body"}\n```',
+        lambda provider, model, api_key, prompt: '```json\n{"filename":"Team Notes","markdown":"Body"}\n```',
     )
 
     result = render_polished_markdown(
