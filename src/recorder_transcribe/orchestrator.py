@@ -25,14 +25,16 @@ from recorder_transcribe.preprocess.audio_prep import (
 )
 from recorder_transcribe.reconcile.chunking import (
     ChunkWindow,
-    build_windows,
-    estimate_duration_sec,
     merge_chunk_canonicals,
-    slice_transcripts_for_window,
 )
 from recorder_transcribe.reconcile.llm_reconciler import LLMReconciler, save_canonical_transcript
 from recorder_transcribe.state.store import StateStore
-from recorder_transcribe.transcribe.runner import build_providers, load_provider_transcripts, save_provider_transcript
+from recorder_transcribe.transcribe.runner import (
+    build_providers,
+    discover_chunk_providers,
+    load_provider_chunk_transcripts,
+    save_provider_chunk_transcript,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
                 f"(example chunk={example.path.name} size_mb={size_mb:.1f}). "
                 "Reduce TRANSCRIBE_CHUNK_SECONDS and ensure ffmpeg is installed so splitting can run."
             )
-    artifacts_dir = settings.output_root / "artifacts" / audio_id / "providers"
+    artifacts_root = settings.output_root / "artifacts" / audio_id
 
     for provider in providers:
         if provider.name == "openai":
@@ -91,7 +93,7 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
             provider.name,
             model_hint,
         )
-        chunk_results = []
+        provider_segments = 0
         for chunk_index, chunk in enumerate(chunks):
             logger.info(
                 "Transcribing chunk audio_id=%s provider=%s chunk=%d start=%.2f end=%.2f",
@@ -102,24 +104,18 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
                 chunk.end_sec,
             )
             chunk_audio_id = f"{audio_id}__chunk_{chunk_index:03d}"
-            chunk_results.append(provider.transcribe(chunk_audio_id, chunk.path, settings.language_hint))
+            transcript = provider.transcribe(chunk_audio_id, chunk.path, settings.language_hint)
+            transcript = _with_global_segment_offsets(audio_id, transcript, chunk)
+            path = save_provider_chunk_transcript(transcript, artifacts_root, chunk_index)
+            transcript.raw_payload_path = str(path)
+            path.write_text(json.dumps(transcript.model_dump(), indent=2), encoding="utf-8")
+            provider_segments += len(transcript.segments)
 
-        transcript = _merge_provider_chunk_transcripts(
-            audio_id=audio_id,
-            provider_name=provider.name,
-            chunks=chunks,
-            chunk_transcripts=chunk_results,
-            language_hint=settings.language_hint,
-            total_duration_sec=duration,
-        )
-        path = save_provider_transcript(transcript, artifacts_dir)
-        transcript.raw_payload_path = str(path)
-        path.write_text(json.dumps(transcript.model_dump(), indent=2), encoding="utf-8")
         store.save_provider_run(
             audio_id,
-            transcript.provider_name,
-            str(path),
-            summary={"duration_sec": transcript.duration_sec, "segments": len(transcript.segments)},
+            provider.name,
+            str(artifacts_root / "transcribe" / "chunks"),
+            summary={"duration_sec": duration, "segments": provider_segments, "chunks": len(chunks)},
         )
 
     store.update_status(audio_id, "transcribed")
@@ -133,42 +129,42 @@ def reconcile_step(settings: Settings, store: StateStore, audio_id: str, dry_run
         settings.reconciler_provider,
         settings.reconciler_model,
     )
-    provider_dir = settings.output_root / "artifacts" / audio_id / "providers"
-    transcripts = load_provider_transcripts(provider_dir)
-    if not transcripts:
-        raise RuntimeError(f"No provider transcripts found for {audio_id}")
+    artifacts_root = settings.output_root / "artifacts" / audio_id
+    windows = _load_transcription_chunk_windows(artifacts_root)
+    if not windows:
+        if _has_legacy_provider_artifacts(artifacts_root):
+            raise RuntimeError(
+                f"Legacy merged provider transcripts detected for {audio_id}. "
+                "This pipeline now requires chunk-based artifacts; rerun transcribe."
+            )
+        raise RuntimeError(f"Missing transcription chunk manifest for {audio_id}")
+
+    expected_providers = discover_chunk_providers(artifacts_root)
+    if not expected_providers:
+        if _has_legacy_provider_artifacts(artifacts_root):
+            raise RuntimeError(
+                f"Legacy merged provider transcripts detected for {audio_id}. "
+                "This pipeline now requires chunk-based artifacts; rerun transcribe."
+            )
+        raise RuntimeError(f"No chunk provider transcripts found for {audio_id}")
     validate_reconciler_credentials(settings)
     reconciler_provider = settings.reconciler_provider.strip().lower()
     api_key = resolve_llm_api_key(settings, reconciler_provider)
 
-    reconcile_artifacts_dir = settings.output_root / "artifacts" / audio_id / "reconcile"
-    duration_sec = estimate_duration_sec(transcripts)
-    windows = _load_transcription_chunk_windows(settings.output_root / "artifacts" / audio_id)
-    if windows and settings.use_transcribe_chunks_for_reconcile:
-        logger.info(
-            "Using transcription chunk windows for reconciliation audio_id=%s windows=%d",
-            audio_id,
-            len(windows),
-        )
-    else:
-        windows = build_windows(
-            duration_sec=duration_sec,
-            chunk_seconds=settings.reconcile_chunk_seconds,
-            overlap_seconds=settings.reconcile_chunk_overlap_seconds,
-        )
+    reconcile_artifacts_dir = artifacts_root / "reconcile"
+    duration_sec = _manifest_duration_sec(windows)
     logger.info(
-        "Chunked reconciliation planned audio_id=%s windows=%d duration_sec=%.2f chunk_sec=%d overlap_sec=%d",
+        "Chunked reconciliation planned audio_id=%s windows=%d duration_sec=%.2f",
         audio_id,
         len(windows),
         duration_sec,
-        settings.reconcile_chunk_seconds,
-        settings.reconcile_chunk_overlap_seconds,
     )
     chunk_results: list[CanonicalTranscript] = []
     for window in windows:
         chunk_id = f"{audio_id}__chunk_{window.index:03d}"
         chunk_dir = reconcile_artifacts_dir / "chunks" / f"{window.index:03d}"
-        window_transcripts = slice_transcripts_for_window(transcripts, window)
+        window_transcripts = load_provider_chunk_transcripts(artifacts_root, window.index)
+        _validate_chunk_provider_completeness(audio_id, window.index, expected_providers, window_transcripts)
         logger.info(
             "Reconciling chunk audio_id=%s chunk=%d start=%.2f end=%.2f providers=%d",
             audio_id,
@@ -206,7 +202,7 @@ def export_step(settings: Settings, store: StateStore, audio_id: str) -> None:
     canonical = CanonicalTranscript.model_validate(payload)
 
     source_file = get_original_audio_path(settings.data_root / "raw", audio_id).name
-    providers = [t.provider_name for t in load_provider_transcripts(settings.output_root / "artifacts" / audio_id / "providers")]
+    providers = discover_chunk_providers(settings.output_root / "artifacts" / audio_id)
     if settings.enable_polish_pass:
         validate_polish_credentials(settings)
         polish_provider = settings.polish_provider.strip().lower()
@@ -285,67 +281,6 @@ def run_summary(succeeded: int, failed: int) -> dict[str, str | int]:
     }
 
 
-def _merge_provider_chunk_transcripts(
-    audio_id: str,
-    provider_name: str,
-    chunks: list[AudioChunk],
-    chunk_transcripts: list[ProviderTranscript],
-    language_hint: str,
-    total_duration_sec: float,
-) -> ProviderTranscript:
-    merged_segments: list[Segment] = []
-    merged_text_parts: list[str] = []
-    language = language_hint
-    confidence_values: list[float] = []
-
-    for chunk, chunk_result in zip(chunks, chunk_transcripts):
-        language = chunk_result.language or language
-        chunk_text = chunk_result.raw_text.strip()
-        if chunk_text:
-            merged_text_parts.append(chunk_text)
-
-        timed = [s for s in chunk_result.segments if s.end_sec > s.start_sec]
-        if timed:
-            for seg in timed:
-                merged_segments.append(
-                    Segment(
-                        start_sec=seg.start_sec + chunk.start_sec,
-                        end_sec=seg.end_sec + chunk.start_sec,
-                        text=seg.text,
-                        confidence=seg.confidence,
-                        speaker=seg.speaker,
-                    )
-                )
-                if seg.confidence is not None:
-                    confidence_values.append(seg.confidence)
-        elif chunk_text:
-            merged_segments.append(
-                Segment(
-                    start_sec=chunk.start_sec,
-                    end_sec=max(chunk.end_sec, chunk.start_sec + 0.1),
-                    text=chunk_text,
-                    confidence=None,
-                    speaker=None,
-                )
-            )
-
-    merged_segments.sort(key=lambda s: (s.start_sec, s.end_sec))
-    confidence_summary: dict[str, float] = {}
-    if confidence_values:
-        confidence_summary["segment_confidence_mean"] = sum(confidence_values) / len(confidence_values)
-
-    return ProviderTranscript(
-        provider_name=provider_name,
-        audio_id=audio_id,
-        language=language,
-        duration_sec=total_duration_sec,
-        segments=merged_segments,
-        raw_text="\n".join(merged_text_parts).strip(),
-        confidence_summary=confidence_summary or None,
-        raw_payload_path="",
-    )
-
-
 def _render_markdown_with_frontmatter(
     body: str,
     canonical: CanonicalTranscript,
@@ -405,3 +340,56 @@ def _load_transcription_chunk_windows(artifacts_root: Path) -> list[ChunkWindow]
             )
         )
     return windows
+
+
+def _with_global_segment_offsets(audio_id: str, transcript: ProviderTranscript, chunk: AudioChunk) -> ProviderTranscript:
+    global_segments: list[Segment] = []
+    for seg in transcript.segments:
+        global_segments.append(
+            Segment(
+                start_sec=seg.start_sec + chunk.start_sec,
+                end_sec=seg.end_sec + chunk.start_sec,
+                text=seg.text,
+                confidence=seg.confidence,
+                speaker=seg.speaker,
+            )
+        )
+
+    duration = transcript.duration_sec
+    if duration <= 0.0:
+        duration = max(0.0, chunk.end_sec - chunk.start_sec)
+
+    return transcript.model_copy(
+        update={
+            "audio_id": audio_id,
+            "duration_sec": duration,
+            "segments": global_segments,
+            "raw_payload_path": "",
+        }
+    )
+
+
+def _manifest_duration_sec(windows: list[ChunkWindow]) -> float:
+    if not windows:
+        return 0.0
+    return max(window.end_sec for window in windows)
+
+
+def _has_legacy_provider_artifacts(artifacts_root: Path) -> bool:
+    provider_dir = artifacts_root / "providers"
+    return provider_dir.exists() and any(provider_dir.glob("*.json"))
+
+
+def _validate_chunk_provider_completeness(
+    audio_id: str,
+    chunk_index: int,
+    expected_providers: list[str],
+    chunk_transcripts: list[ProviderTranscript],
+) -> None:
+    found = {transcript.provider_name for transcript in chunk_transcripts}
+    missing = sorted(set(expected_providers) - found)
+    if missing:
+        raise RuntimeError(
+            f"Missing provider transcript artifacts for audio_id={audio_id} chunk={chunk_index:03d}: "
+            f"{', '.join(missing)}"
+        )

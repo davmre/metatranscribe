@@ -30,16 +30,29 @@ def build_providers(settings: Settings) -> list[TranscriptionProvider]:
     return providers
 
 
-def save_provider_transcript(transcript: ProviderTranscript, artifacts_dir: Path) -> Path:
-    artifacts_dir.mkdir(parents=True, exist_ok=True)
-    path = artifacts_dir / f"{transcript.provider_name}.json"
+def _chunk_provider_path(artifacts_root: Path, chunk_index: int, provider_name: str) -> Path:
+    return artifacts_root / "transcribe" / "chunks" / f"{chunk_index:03d}" / "providers" / f"{provider_name}.json"
+
+
+def save_provider_chunk_transcript(transcript: ProviderTranscript, artifacts_root: Path, chunk_index: int) -> Path:
+    path = _chunk_provider_path(artifacts_root, chunk_index, transcript.provider_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(transcript.model_dump(), indent=2), encoding="utf-8")
     return path
 
 
-def load_provider_transcripts(artifacts_dir: Path) -> list[ProviderTranscript]:
+def load_provider_chunk_transcripts(artifacts_root: Path, chunk_index: int) -> list[ProviderTranscript]:
     transcripts: list[ProviderTranscript] = []
-    for path in sorted(artifacts_dir.glob("*.json")):
+    providers_dir = artifacts_root / "transcribe" / "chunks" / f"{chunk_index:03d}" / "providers"
+    for path in sorted(providers_dir.glob("*.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
         transcripts.append(ProviderTranscript.model_validate(payload))
     return transcripts
+
+
+def discover_chunk_providers(artifacts_root: Path) -> list[str]:
+    provider_names: set[str] = set()
+    chunks_root = artifacts_root / "transcribe" / "chunks"
+    for path in chunks_root.glob("*/providers/*.json"):
+        provider_names.add(path.stem)
+    return sorted(provider_names)

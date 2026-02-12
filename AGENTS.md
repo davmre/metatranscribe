@@ -19,13 +19,12 @@ The pipeline is designed to:
 - Normalize audio (`ffmpeg` if available).
 - Split into transcription chunks (`TRANSCRIBE_CHUNK_SECONDS`).
 - Call each provider per chunk.
-- Merge chunk results into one per-provider transcript with global timestamps.
-- Save provider artifacts to `outputs/artifacts/<audio_id>/providers/*.json`.
+- Save per-chunk provider artifacts to `outputs/artifacts/<audio_id>/transcribe/chunks/<idx>/providers/*.json`.
 - Save chunk manifest to `outputs/artifacts/<audio_id>/transcribe_chunks.json`.
 
 3. `reconcile`:
-- Load per-provider transcripts.
-- Reconcile in chunks (by default reusing transcription chunk boundaries).
+- Load provider transcripts directly from transcription chunk artifacts.
+- Reconcile in chunks using the transcription chunk boundaries.
 - Save per-chunk reconcile artifacts under `outputs/artifacts/<audio_id>/reconcile/chunks/*`.
 - Mechanically merge chunk canonicals into `outputs/artifacts/<audio_id>/canonical.json`.
 
@@ -63,7 +62,7 @@ The pipeline is designed to:
 ## Artifacts and Debugging
 For each `audio_id`, inspect:
 - Provider outputs:
-  - `outputs/artifacts/<audio_id>/providers/*.json`
+  - `outputs/artifacts/<audio_id>/transcribe/chunks/<idx>/providers/*.json`
 - Transcription chunk boundaries:
   - `outputs/artifacts/<audio_id>/transcribe_chunks.json`
 - Reconciliation I/O:
@@ -90,9 +89,6 @@ Transcription:
 Reconciliation:
 - `RECONCILER_PROVIDER` (`openai|anthropic`)
 - `RECONCILER_MODEL`
-- `RECONCILE_CHUNK_SECONDS`
-- `RECONCILE_CHUNK_OVERLAP_SECONDS`
-- `USE_TRANSCRIBE_CHUNKS_FOR_RECONCILE`
 
 Polish:
 - `ENABLE_POLISH_PASS`

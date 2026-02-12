@@ -24,11 +24,8 @@ class Settings:
     transcribe_openai_model: str
     transcribe_deepgram_model: str
     transcribe_chunk_seconds: int
-    use_transcribe_chunks_for_reconcile: bool
     reconciler_model: str
     reconciler_provider: str
-    reconcile_chunk_seconds: int
-    reconcile_chunk_overlap_seconds: int
     enable_polish_pass: bool
     polish_provider: str
     polish_model: str
@@ -82,12 +79,8 @@ def load_settings(dotenv_path: str | None = None) -> Settings:
         transcribe_openai_model=os.getenv("TRANSCRIBE_OPENAI_MODEL", "gpt-4o-transcribe"),
         transcribe_deepgram_model=os.getenv("TRANSCRIBE_DEEPGRAM_MODEL", "nova-3"),
         transcribe_chunk_seconds=int(os.getenv("TRANSCRIBE_CHUNK_SECONDS", "540")),
-        use_transcribe_chunks_for_reconcile=os.getenv("USE_TRANSCRIBE_CHUNKS_FOR_RECONCILE", "true").strip().lower()
-        in {"1", "true", "yes", "on"},
         reconciler_model=os.getenv("RECONCILER_MODEL", "gpt-5"),
         reconciler_provider=os.getenv("RECONCILER_PROVIDER", "openai"),
-        reconcile_chunk_seconds=int(os.getenv("RECONCILE_CHUNK_SECONDS", "300")),
-        reconcile_chunk_overlap_seconds=int(os.getenv("RECONCILE_CHUNK_OVERLAP_SECONDS", "20")),
         enable_polish_pass=os.getenv("ENABLE_POLISH_PASS", "true").strip().lower() in {"1", "true", "yes", "on"},
         polish_provider=os.getenv("POLISH_PROVIDER", os.getenv("RECONCILER_PROVIDER", "openai")),
         polish_model=os.getenv("POLISH_MODEL", os.getenv("RECONCILER_MODEL", "gpt-5")),

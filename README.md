@@ -51,7 +51,7 @@ python scripts/run_pipeline.py
 ## Output
 - Final markdown: `outputs/final/<audio_id>.md`
 - Final JSON: `outputs/final/<audio_id>.json`
-- Provider artifacts: `outputs/artifacts/<audio_id>/providers/*.json`
+- Provider chunk artifacts: `outputs/artifacts/<audio_id>/transcribe/chunks/<idx>/providers/*.json`
 - Canonical artifact: `outputs/artifacts/<audio_id>/canonical.json`
 - Reconciliation I/O artifacts: `outputs/artifacts/<audio_id>/reconcile/*`
 - Polish I/O artifacts: `outputs/artifacts/<audio_id>/polish/*`
@@ -65,9 +65,8 @@ Runs every 4 hours:
 ## Notes
 - `ffmpeg`/`ffprobe` are optional but recommended for normalization and accurate durations.
 - Transcription chunk size is configurable with `TRANSCRIBE_CHUNK_SECONDS` (default 540s).
-- Reconciliation can reuse transcription chunk boundaries via `USE_TRANSCRIBE_CHUNKS_FOR_RECONCILE=true`.
+- Reconciliation always uses transcription chunk boundaries from `transcribe_chunks.json`.
 - Reconciliation provider is configurable via `RECONCILER_PROVIDER=openai|anthropic`.
-- Chunk settings are configurable via `RECONCILE_CHUNK_SECONDS` and `RECONCILE_CHUNK_OVERLAP_SECONDS`.
 - Enable/disable polished final output with `ENABLE_POLISH_PASS=true|false`.
 - Polish provider/model are configurable via `POLISH_PROVIDER` and `POLISH_MODEL`.
 - Increase verbosity with `LOG_LEVEL=DEBUG` in `.env`.

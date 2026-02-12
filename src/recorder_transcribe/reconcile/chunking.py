@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from recorder_transcribe.models import CanonicalSegment, CanonicalTranscript, ProviderTranscript, Segment
+from recorder_transcribe.models import CanonicalSegment, CanonicalTranscript
 
 
 @dataclass(slots=True)
@@ -10,63 +10,6 @@ class ChunkWindow:
     index: int
     start_sec: float
     end_sec: float
-
-
-def estimate_duration_sec(transcripts: list[ProviderTranscript]) -> float:
-    duration = 0.0
-    for transcript in transcripts:
-        duration = max(duration, transcript.duration_sec)
-        if transcript.segments:
-            duration = max(duration, max(seg.end_sec for seg in transcript.segments))
-    return duration
-
-
-def build_windows(duration_sec: float, chunk_seconds: int, overlap_seconds: int) -> list[ChunkWindow]:
-    if duration_sec <= 0:
-        return [ChunkWindow(index=0, start_sec=0.0, end_sec=float(chunk_seconds))]
-
-    chunk = max(30, chunk_seconds)
-    overlap = max(0, min(overlap_seconds, chunk // 2))
-    step = max(1, chunk - overlap)
-
-    windows: list[ChunkWindow] = []
-    start = 0.0
-    idx = 0
-    while start < duration_sec:
-        end = min(duration_sec, start + chunk)
-        windows.append(ChunkWindow(index=idx, start_sec=start, end_sec=end))
-        idx += 1
-        start += step
-
-    if not windows:
-        windows.append(ChunkWindow(index=0, start_sec=0.0, end_sec=float(chunk)))
-    return windows
-
-
-def slice_transcripts_for_window(transcripts: list[ProviderTranscript], window: ChunkWindow) -> list[ProviderTranscript]:
-    sliced: list[ProviderTranscript] = []
-    for transcript in transcripts:
-        window_segments = [
-            seg.model_copy()
-            for seg in transcript.segments
-            if seg.end_sec >= window.start_sec and seg.start_sec <= window.end_sec
-        ]
-        raw_text = " ".join(seg.text.strip() for seg in window_segments if seg.text.strip()).strip()
-
-        sliced.append(
-            ProviderTranscript(
-                provider_name=transcript.provider_name,
-                audio_id=transcript.audio_id,
-                language=transcript.language,
-                duration_sec=max(0.0, window.end_sec - window.start_sec),
-                segments=window_segments,
-                raw_text=raw_text,
-                confidence_summary=transcript.confidence_summary,
-                raw_payload_path=transcript.raw_payload_path,
-            )
-        )
-
-    return sliced
 
 
 def merge_chunk_canonicals(audio_id: str, chunks: list[CanonicalTranscript], duration_sec: float) -> CanonicalTranscript:
