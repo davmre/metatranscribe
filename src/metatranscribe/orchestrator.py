@@ -15,6 +15,7 @@ from metatranscribe.ingest.manual_inbox import get_original_audio_path, ingest_n
 from metatranscribe.models import CanonicalTranscript, ProviderTranscript, Segment
 from metatranscribe.output.io import write_outputs
 from metatranscribe.output.polish_markdown import render_polished_markdown
+from metatranscribe.output.publish import build_publish_filename, copy_published_markdown
 from metatranscribe.postprocess.silence_annotations import build_silence_markers
 from metatranscribe.preprocess.audio_prep import (
     AudioChunk,
@@ -221,7 +222,7 @@ def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: b
     validate_polish_credentials(settings)
     polish_provider = settings.polish_provider.strip().lower()
     polish_api_key = resolve_llm_api_key(settings, polish_provider)
-    markdown_body = render_polished_markdown(
+    polish_result = render_polished_markdown(
         canonical=canonical,
         provider=polish_provider,
         model=settings.polish_model,
@@ -234,7 +235,7 @@ def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: b
         logger.info("Export dry-run completed audio_id=%s", audio_id)
         return
     markdown = _render_markdown_with_frontmatter(
-        body=markdown_body,
+        body=polish_result.markdown,
         canonical=canonical,
         source_file=source_file,
         providers=providers,
@@ -245,8 +246,23 @@ def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: b
     final_md = settings.output_root / "final" / f"{audio_id}.md"
     final_json = settings.output_root / "final" / f"{audio_id}.json"
     write_outputs(canonical, final_md, final_json, markdown)
+    published_path: Path | None = None
+    if settings.export_publish_dir:
+        publish_filename = build_publish_filename(datetime.now().date(), polish_result.suggested_name)
+        published_path = copy_published_markdown(final_md, settings.export_publish_dir, publish_filename)
+        _write_publish_artifact(
+            settings.output_root / "artifacts" / audio_id / "polish",
+            publish_filename,
+            published_path.name,
+            polish_result.suggested_name,
+        )
     store.update_status(audio_id, "exported")
-    logger.info("Export step completed audio_id=%s output=%s", audio_id, final_md)
+    logger.info(
+        "Export step completed audio_id=%s output=%s published_copy=%s",
+        audio_id,
+        final_md,
+        str(published_path) if published_path else "none",
+    )
 
 
 def run_pipeline(settings: Settings) -> tuple[int, int]:
@@ -316,6 +332,27 @@ def _render_markdown_with_frontmatter(
             lines.append(f'{key}: "{str(value).replace(chr(34), chr(39))}"')
     lines.extend(["---", "", body.strip(), ""])
     return "\n".join(lines)
+
+
+def _write_publish_artifact(
+    polish_artifacts_dir: Path,
+    requested_filename: str,
+    copied_filename: str,
+    suggested_name: str,
+) -> None:
+    polish_artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (polish_artifacts_dir / "publish_target.json").write_text(
+        json.dumps(
+            {
+                "requested_filename": requested_filename,
+                "copied_filename": copied_filename,
+                "suggested_name": suggested_name,
+                "collision_resolved": requested_filename != copied_filename,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
 
 def _write_transcription_chunk_manifest(artifacts_root: Path, chunks: list[AudioChunk]) -> None:

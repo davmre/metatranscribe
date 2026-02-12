@@ -54,6 +54,7 @@ python scripts/run_pipeline.py
 ## Output
 - Final markdown: `outputs/final/<audio_id>.md`
 - Final JSON: `outputs/final/<audio_id>.json`
+- Optional published markdown copy: `<EXPORT_PUBLISH_DIR>/YYYY-MM-DD_<llm_suggested_name>.md`
 - Provider chunk artifacts: `outputs/artifacts/<audio_id>/transcribe/chunks/<idx>/providers/*.json`
 - Canonical artifact: `outputs/artifacts/<audio_id>/canonical.json`
 - Reconciliation I/O artifacts: `outputs/artifacts/<audio_id>/reconcile/*`
@@ -73,6 +74,7 @@ Runs every 4 hours:
 - `scripts/reconcile.py --dry-run` writes per-chunk `request_prompt.json` artifacts only (no LLM call, no canonical write, no status update).
 - Export always runs the polish pass to generate human-readable Markdown.
 - Polish provider/model are configurable via `POLISH_PROVIDER` and `POLISH_MODEL`.
+- If `EXPORT_PUBLISH_DIR` is set, export also copies markdown to that folder using `YYYY-MM-DD_<llm_suggested_name>.md` and appends `_2`, `_3`, etc. on collisions.
 - `scripts/reexport.py --dry-run` writes `polish/request_prompt.json` only (no LLM call, no final output writes, no status update).
 - Increase verbosity with `LOG_LEVEL=DEBUG` in `.env`.
 - Silence markers are generated algorithmically from timeline gaps (default threshold 90 seconds).

@@ -1,9 +1,11 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 from metatranscribe.config import Settings
 from metatranscribe.models import AudioFileRecord, CanonicalTranscript, ProviderTranscript, Segment
 from metatranscribe.orchestrator import export_step, reconcile_step, run_pipeline
+from metatranscribe.output.polish_markdown import PolishResult
 from metatranscribe.state.store import StateStore
 
 
@@ -29,6 +31,7 @@ def _settings(tmp_path: Path) -> Settings:
         polish_provider="openai",
         polish_model="gpt-5",
         polish_long_silence_seconds=90,
+        export_publish_dir=None,
         log_level="INFO",
         pipeline_version="0.1.0",
     )
@@ -109,6 +112,56 @@ def test_export_dry_run_writes_prompt_only_and_preserves_state(tmp_path: Path) -
     refreshed = store.get_record(audio_id)
     assert refreshed is not None
     assert refreshed.status == "reconciled"
+
+
+def test_export_publishes_markdown_copy_with_collision_suffix(tmp_path: Path, monkeypatch) -> None:
+    settings = _settings(tmp_path)
+    publish_dir = tmp_path / "published"
+    settings.export_publish_dir = publish_dir
+    settings.ensure_dirs()
+    store = StateStore(settings.state_db_path)
+    audio_id = "a4"
+    store.insert_audio_if_new(
+        AudioFileRecord(audio_id=audio_id, source_path="dummy.wav", source_hash="hash-a4", status="reconciled")
+    )
+
+    raw_dir = settings.data_root / "raw" / audio_id
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / "original.wav").write_bytes(b"wav")
+
+    canonical = CanonicalTranscript(
+        audio_id=audio_id,
+        title="Title",
+        language="en",
+        duration_sec=12.0,
+        segments=[],
+        silence_markers=[],
+        final_text="",
+        provenance={},
+    )
+    canonical_path = settings.output_root / "artifacts" / audio_id / "canonical.json"
+    canonical_path.parent.mkdir(parents=True, exist_ok=True)
+    canonical_path.write_text(json.dumps(canonical.model_dump(), indent=2), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "metatranscribe.orchestrator.render_polished_markdown",
+        lambda **kwargs: PolishResult(markdown="# Heading\n\nBody\n", suggested_name="Weekly Sync"),
+    )
+
+    collision_name = f"{datetime.now().date().isoformat()}_weekly_sync.md"
+    publish_dir.mkdir(parents=True, exist_ok=True)
+    (publish_dir / collision_name).write_text("existing", encoding="utf-8")
+
+    export_step(settings, store, audio_id, dry_run=False)
+
+    assert (settings.output_root / "final" / f"{audio_id}.md").exists()
+    assert (publish_dir / collision_name).exists()
+    assert (publish_dir / collision_name.replace(".md", "_2.md")).exists()
+    publish_artifact = settings.output_root / "artifacts" / audio_id / "polish" / "publish_target.json"
+    assert publish_artifact.exists()
+    refreshed = store.get_record(audio_id)
+    assert refreshed is not None
+    assert refreshed.status == "exported"
 
 
 def test_run_pipeline_skips_failed_records_at_retry_cap(tmp_path: Path, monkeypatch) -> None:

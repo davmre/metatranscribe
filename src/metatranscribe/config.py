@@ -29,6 +29,7 @@ class Settings:
     polish_provider: str
     polish_model: str
     polish_long_silence_seconds: int
+    export_publish_dir: Path | None
     log_level: str
     pipeline_version: str
 
@@ -45,6 +46,8 @@ class Settings:
             self.output_root / "artifacts",
         ):
             path.mkdir(parents=True, exist_ok=True)
+        if self.export_publish_dir:
+            self.export_publish_dir.mkdir(parents=True, exist_ok=True)
 
 
 def _parse_csv(value: str) -> list[str]:
@@ -80,6 +83,9 @@ def load_settings(dotenv_path: str | None = None) -> Settings:
         polish_provider=os.getenv("POLISH_PROVIDER", os.getenv("RECONCILER_PROVIDER", "openai")),
         polish_model=os.getenv("POLISH_MODEL", os.getenv("RECONCILER_MODEL", "gpt-5")),
         polish_long_silence_seconds=int(os.getenv("POLISH_LONG_SILENCE_SECONDS", "90")),
+        export_publish_dir=Path(os.environ["EXPORT_PUBLISH_DIR"]).resolve()
+        if os.getenv("EXPORT_PUBLISH_DIR", "").strip()
+        else None,
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         pipeline_version=os.getenv("PIPELINE_VERSION", "0.1.0"),
     )
