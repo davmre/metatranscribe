@@ -113,7 +113,7 @@ def _call_anthropic(model: str, api_key: str, prompt: str) -> str:
         system_prompt="You are an expert transcript editor. Return markdown only.",
         user_prompt=prompt,
         temperature=0.2,
-        max_tokens=65536,
+        max_tokens=64000,
     )
     elapsed = time.perf_counter() - started
     logger.info("Anthropic polish request finished model=%s elapsed_sec=%.2f", model, elapsed)
