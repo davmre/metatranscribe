@@ -69,6 +69,7 @@ Runs every 4 hours:
 ## Notes
 - `ffmpeg`/`ffprobe` are optional but recommended for normalization and accurate durations.
 - Transcription chunk size is configurable with `TRANSCRIBE_CHUNK_SECONDS` (default 540s).
+- Optional chunk overlap is configurable with `TRANSCRIBE_CHUNK_OVERLAP_SECONDS` (default 0s, suggested 5s to protect boundary words).
 - Reconciliation always uses transcription chunk boundaries from `transcribe_chunks.json`.
 - Reconciliation provider is configurable via `RECONCILER_PROVIDER=openai|anthropic`.
 - `scripts/reconcile.py --dry-run` writes per-chunk `request_prompt.json` artifacts only (no LLM call, no canonical write, no status update).

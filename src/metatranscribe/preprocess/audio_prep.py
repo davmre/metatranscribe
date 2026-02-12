@@ -71,6 +71,14 @@ class AudioChunk:
     path: Path
     start_sec: float
     end_sec: float
+    core_start_sec: float | None = None
+    core_end_sec: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.core_start_sec is None:
+            self.core_start_sec = self.start_sec
+        if self.core_end_sec is None:
+            self.core_end_sec = self.end_sec
 
 
 def split_audio_into_chunks(
@@ -78,6 +86,7 @@ def split_audio_into_chunks(
     output_dir: Path,
     duration_sec: float,
     chunk_seconds: int,
+    overlap_seconds: int = 0,
 ) -> list[AudioChunk]:
     if duration_sec <= 0 or chunk_seconds <= 0 or duration_sec <= chunk_seconds:
         return [AudioChunk(path=audio_path, start_sec=0.0, end_sec=duration_sec)]
@@ -91,16 +100,19 @@ def split_audio_into_chunks(
     idx = 0
     start = 0.0
     while start < duration_sec:
-        end = min(duration_sec, start + chunk_seconds)
+        core_start = start
+        core_end = min(duration_sec, start + chunk_seconds)
+        extract_start = max(0.0, core_start - overlap_seconds)
+        extract_end = min(duration_sec, core_end + overlap_seconds)
         out_path = output_dir / f"chunk_{idx:03d}.wav"
         _run(
             [
                 ffmpeg,
                 "-y",
                 "-ss",
-                f"{start:.3f}",
+                f"{extract_start:.3f}",
                 "-t",
-                f"{max(0.1, end - start):.3f}",
+                f"{max(0.1, extract_end - extract_start):.3f}",
                 "-i",
                 str(audio_path),
                 "-ac",
@@ -110,8 +122,16 @@ def split_audio_into_chunks(
                 str(out_path),
             ]
         )
-        chunks.append(AudioChunk(path=out_path, start_sec=start, end_sec=end))
+        chunks.append(
+            AudioChunk(
+                path=out_path,
+                start_sec=extract_start,
+                end_sec=extract_end,
+                core_start_sec=core_start,
+                core_end_sec=core_end,
+            )
+        )
         idx += 1
-        start = end
+        start = core_end
 
     return chunks

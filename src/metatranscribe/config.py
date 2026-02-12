@@ -24,6 +24,7 @@ class Settings:
     transcribe_openai_model: str
     transcribe_deepgram_model: str
     transcribe_chunk_seconds: int
+    transcribe_chunk_overlap_seconds: int
     reconciler_model: str
     reconciler_provider: str
     polish_provider: str
@@ -78,6 +79,7 @@ def load_settings(dotenv_path: str | None = None) -> Settings:
         transcribe_openai_model=os.getenv("TRANSCRIBE_OPENAI_MODEL", "gpt-4o-transcribe"),
         transcribe_deepgram_model=os.getenv("TRANSCRIBE_DEEPGRAM_MODEL", "nova-3"),
         transcribe_chunk_seconds=int(os.getenv("TRANSCRIBE_CHUNK_SECONDS", "540")),
+        transcribe_chunk_overlap_seconds=int(os.getenv("TRANSCRIBE_CHUNK_OVERLAP_SECONDS", "0")),
         reconciler_model=os.getenv("RECONCILER_MODEL", "gpt-5"),
         reconciler_provider=os.getenv("RECONCILER_PROVIDER", "openai"),
         polish_provider=os.getenv("POLISH_PROVIDER", os.getenv("RECONCILER_PROVIDER", "openai")),
@@ -89,8 +91,18 @@ def load_settings(dotenv_path: str | None = None) -> Settings:
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         pipeline_version=os.getenv("PIPELINE_VERSION", "0.1.0"),
     )
+    _validate_transcribe_chunk_settings(settings)
     settings.ensure_dirs()
     return settings
+
+
+def _validate_transcribe_chunk_settings(settings: Settings) -> None:
+    overlap = settings.transcribe_chunk_overlap_seconds
+    chunk = settings.transcribe_chunk_seconds
+    if overlap < 0:
+        raise ValueError("TRANSCRIBE_CHUNK_OVERLAP_SECONDS must be >= 0")
+    if chunk > 0 and overlap >= chunk:
+        raise ValueError("TRANSCRIBE_CHUNK_OVERLAP_SECONDS must be < TRANSCRIBE_CHUNK_SECONDS")
 
 
 def validate_provider_credentials(settings: Settings) -> None:

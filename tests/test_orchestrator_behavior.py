@@ -27,6 +27,7 @@ def _settings(tmp_path: Path) -> Settings:
         transcribe_openai_model="gpt-4o-transcribe",
         transcribe_deepgram_model="nova-3",
         transcribe_chunk_seconds=540,
+        transcribe_chunk_overlap_seconds=0,
         reconciler_model="gpt-5",
         reconciler_provider="openai",
         polish_provider="openai",
@@ -301,8 +302,9 @@ def test_transcribe_step_cleans_processed_audio_dir_on_success(tmp_path: Path, m
         output_dir: Path,
         duration_sec: float,
         chunk_seconds: int,
+        overlap_seconds: int,
     ) -> list[AudioChunk]:
-        del audio_path, duration_sec, chunk_seconds
+        del audio_path, duration_sec, chunk_seconds, overlap_seconds
         output_dir.mkdir(parents=True, exist_ok=True)
         chunk_path = output_dir / "chunk_000.wav"
         chunk_path.write_bytes(b"chunk")

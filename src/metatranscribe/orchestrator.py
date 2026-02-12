@@ -60,13 +60,15 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
         output_dir=settings.data_root / "processed" / audio_id / "chunks",
         duration_sec=duration,
         chunk_seconds=settings.transcribe_chunk_seconds,
+        overlap_seconds=settings.transcribe_chunk_overlap_seconds,
     )
     logger.info(
-        "Prepared transcription chunks audio_id=%s count=%d duration_sec=%.2f chunk_sec=%d",
+        "Prepared transcription chunks audio_id=%s count=%d duration_sec=%.2f chunk_sec=%d overlap_sec=%d",
         audio_id,
         len(chunks),
         duration,
         settings.transcribe_chunk_seconds,
+        settings.transcribe_chunk_overlap_seconds,
     )
     _write_transcription_chunk_manifest(settings.output_root / "artifacts" / audio_id, chunks)
     providers = build_providers(settings)
@@ -98,10 +100,12 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
         provider_segments = 0
         for chunk_index, chunk in enumerate(chunks):
             logger.info(
-                "Transcribing chunk audio_id=%s provider=%s chunk=%d start=%.2f end=%.2f",
+                "Transcribing chunk audio_id=%s provider=%s chunk=%d core_start=%.2f core_end=%.2f extract_start=%.2f extract_end=%.2f",
                 audio_id,
                 provider.name,
                 chunk_index,
+                chunk.core_start_sec,
+                chunk.core_end_sec,
                 chunk.start_sec,
                 chunk.end_sec,
             )
@@ -384,8 +388,10 @@ def _write_transcription_chunk_manifest(artifacts_root: Path, chunks: list[Audio
     manifest = [
         {
             "index": idx,
-            "start_sec": chunk.start_sec,
-            "end_sec": chunk.end_sec,
+            "start_sec": chunk.core_start_sec,
+            "end_sec": chunk.core_end_sec,
+            "extract_start_sec": chunk.start_sec,
+            "extract_end_sec": chunk.end_sec,
         }
         for idx, chunk in enumerate(chunks)
     ]

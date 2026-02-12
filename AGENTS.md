@@ -17,7 +17,7 @@ The pipeline is designed to:
 
 2. `transcribe`:
 - Normalize audio (`ffmpeg` if available).
-- Split into transcription chunks (`TRANSCRIBE_CHUNK_SECONDS`).
+- Split into transcription chunks (`TRANSCRIBE_CHUNK_SECONDS`) with optional overlap (`TRANSCRIBE_CHUNK_OVERLAP_SECONDS`).
 - Call each provider per chunk.
 - Save per-chunk provider artifacts to `outputs/artifacts/<audio_id>/transcribe/chunks/<idx>/providers/*.json`.
 - Save chunk manifest to `outputs/artifacts/<audio_id>/transcribe_chunks.json`.
@@ -85,6 +85,7 @@ Transcription:
 - `TRANSCRIBE_OPENAI_MODEL`
 - `TRANSCRIBE_DEEPGRAM_MODEL`
 - `TRANSCRIBE_CHUNK_SECONDS`
+- `TRANSCRIBE_CHUNK_OVERLAP_SECONDS`
 
 Reconciliation:
 - `RECONCILER_PROVIDER` (`openai|anthropic`)
