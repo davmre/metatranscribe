@@ -53,7 +53,6 @@ def build_reconciliation_prompt(audio_id: str, transcripts: list[ProviderTranscr
                 "evidence_refs": ["provider names that support this phrasing"],
             }
         ],
-        "silence_markers": [],
         "final_text": "string",
         "provenance": {"providers": ["string"], "notes": "string"},
     }

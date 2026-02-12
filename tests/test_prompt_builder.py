@@ -34,6 +34,7 @@ def test_prompt_builder_compacts_segments_and_marks_timing() -> None:
     payload = json.loads(prompt)
     assert payload["audio_id"] == "a"
     providers = {p["provider"]: p for p in payload["evidence"]}
+    assert "silence_markers" not in payload["output_schema"]
 
     assert providers["deepgram"]["segment_count_original"] == 3
     assert providers["deepgram"]["segment_count_compact"] == 2

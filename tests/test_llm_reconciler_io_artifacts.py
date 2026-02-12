@@ -7,7 +7,7 @@ from recorder_transcribe.reconcile.llm_reconciler import LLMReconciler
 
 class _DummyReconciler(LLMReconciler):
     def _call_model(self, prompt: str) -> str:
-        return '{"audio_id":"id","title":"t","language":"en","duration_sec":1,"segments":[],"silence_markers":[],"final_text":"","provenance":{}}'
+        return '{"audio_id":"id","title":"t","language":"en","duration_sec":1,"segments":[],"final_text":"","provenance":{}}'
 
 
 def test_reconciler_writes_io_artifacts(tmp_path: Path) -> None:
