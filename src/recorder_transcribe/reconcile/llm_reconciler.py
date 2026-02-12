@@ -25,6 +25,7 @@ class LLMReconciler:
         audio_id: str,
         transcripts: list[ProviderTranscript],
         language_hint: str,
+        dry_run: bool = False,
     ) -> CanonicalTranscript:
         if not transcripts:
             raise ValueError("Cannot reconcile empty transcript list")
@@ -39,12 +40,17 @@ class LLMReconciler:
             len(prompt),
         )
         self._write_artifact("request_prompt.json", prompt)
+            
+        if dry_run:
+            return CanonicalTranscript(audio_id=audio_id, title='', language='', duration_sec=0, segments=[], final_text='', provenance={})
+
         response_text = self._call_model(prompt)
         self._write_artifact("response_raw.txt", response_text)
         payload = self._parse_or_repair_json(prompt, response_text)
         self._write_artifact("response_parsed.json", json.dumps(payload, indent=2))
 
         canonical = CanonicalTranscript.model_validate(payload)
+        
         if canonical.audio_id != audio_id:
             canonical.audio_id = audio_id
         return canonical

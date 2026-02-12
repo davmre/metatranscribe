@@ -126,7 +126,7 @@ def transcribe_step(settings: Settings, store: StateStore, audio_id: str) -> Non
     logger.info("Transcription step completed audio_id=%s providers=%d", audio_id, len(providers))
 
 
-def reconcile_step(settings: Settings, store: StateStore, audio_id: str) -> CanonicalTranscript:
+def reconcile_step(settings: Settings, store: StateStore, audio_id: str, dry_run: bool = False) -> CanonicalTranscript:
     logger.info(
         "Reconciliation step started audio_id=%s provider=%s model=%s",
         audio_id,
@@ -183,10 +183,11 @@ def reconcile_step(settings: Settings, store: StateStore, audio_id: str) -> Cano
             reconciler_provider,
             artifacts_dir=chunk_dir,
         )
-        chunk_canonical = reconciler.reconcile(chunk_id, window_transcripts, settings.language_hint)
-        chunk_canonical.audio_id = audio_id
-        (chunk_dir / "canonical.json").write_text(json.dumps(chunk_canonical.model_dump(), indent=2), encoding="utf-8")
-        chunk_results.append(chunk_canonical)
+        chunk_canonical = reconciler.reconcile(chunk_id, window_transcripts, settings.language_hint, dry_run=dry_run)
+        if not dry_run:
+            chunk_canonical.audio_id = audio_id
+            (chunk_dir / "canonical.json").write_text(json.dumps(chunk_canonical.model_dump(), indent=2), encoding="utf-8")
+            chunk_results.append(chunk_canonical)
 
     canonical = merge_chunk_canonicals(audio_id, chunk_results, duration_sec)
 
