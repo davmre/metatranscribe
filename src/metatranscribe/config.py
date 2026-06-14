@@ -33,6 +33,12 @@ class Settings:
     export_publish_dir: Path | None
     log_level: str
     pipeline_version: str
+    web_password: str | None
+    web_secret_key: str | None
+    web_host: str
+    web_port: int
+    web_max_upload_mb: int
+    web_session_cookie_secure: bool
 
     def ensure_dirs(self) -> None:
         for path in (
@@ -53,6 +59,10 @@ class Settings:
 
 def _parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _parse_bool(value: str) -> bool:
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def load_settings(dotenv_path: str | None = None) -> Settings:
@@ -90,6 +100,12 @@ def load_settings(dotenv_path: str | None = None) -> Settings:
         else None,
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         pipeline_version=os.getenv("PIPELINE_VERSION", "0.1.0"),
+        web_password=os.getenv("WEB_PASSWORD") or None,
+        web_secret_key=os.getenv("WEB_SECRET_KEY") or None,
+        web_host=os.getenv("WEB_HOST", "127.0.0.1"),
+        web_port=int(os.getenv("WEB_PORT", "8080")),
+        web_max_upload_mb=int(os.getenv("WEB_MAX_UPLOAD_MB", "512")),
+        web_session_cookie_secure=_parse_bool(os.getenv("WEB_SESSION_COOKIE_SECURE", "true")),
     )
     _validate_transcribe_chunk_settings(settings)
     settings.ensure_dirs()
@@ -117,6 +133,16 @@ def validate_provider_credentials(settings: Settings) -> None:
 
     if missing:
         raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+
+
+def validate_web_credentials(settings: Settings) -> None:
+    missing: list[str] = []
+    if not settings.web_password:
+        missing.append("WEB_PASSWORD")
+    if not settings.web_secret_key:
+        missing.append("WEB_SECRET_KEY")
+    if missing:
+        raise ValueError(f"Missing required environment variables for the web interface: {', '.join(missing)}")
 
 
 def validate_reconciler_credentials(settings: Settings) -> None:

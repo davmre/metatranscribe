@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set item = detail.item %}
+{% block title %}{{ item.title }} &middot; metatranscribe{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('index') }}">&larr; All transcripts</a></p>
+<h1>{{ item.title }}</h1>
+<p class="meta">
+  {{ item.created_at[:19] | replace('T', ' ') }}{% if item.duration_sec %} &middot; {{ item.duration_sec | duration }}{% endif %}
+  &middot; <span class="badge {% if item.is_ready %}ready{% elif item.is_failed %}failed{% else %}progress{% endif %}">{{ item.status_label }}</span>
+</p>
+
+{% if item.is_ready and detail.body_html %}
+  <article class="transcript">{{ detail.body_html | safe }}</article>
+{% elif item.is_failed %}
+  <p class="error">Transcription failed.</p>
+  {% if item.error %}<pre style="white-space: pre-wrap;">{{ item.error }}</pre>{% endif %}
+{% else %}
+  <p class="empty">Processing &mdash; this page will refresh automatically.</p>
+  <script>
+    const timer = setInterval(async () => {
+      try {
+        const resp = await fetch('{{ url_for("status", audio_id=item.audio_id) }}');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.status === 'exported' || data.status === 'failed') {
+          clearInterval(timer);
+          location.reload();
+        }
+      } catch (e) { /* ignore */ }
+    }, 5000);
+  </script>
+{% endif %}
+{% endblock %}
