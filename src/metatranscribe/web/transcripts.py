@@ -53,6 +53,7 @@ class TranscriptItem:
 class TranscriptDetail:
     item: TranscriptItem
     body_html: str | None
+    body_markdown: str | None
 
 
 def _final_json_path(settings: Settings, audio_id: str) -> Path:
@@ -140,10 +141,13 @@ def load_detail(settings: Settings, store: StateStore, audio_id: str) -> Transcr
         return None
     item = _to_item(settings, record)
     body_html: str | None = None
+    body_markdown: str | None = None
     md_path = _final_md_path(settings, audio_id)
     if item.is_ready and md_path.exists():
         try:
-            body_html = _render_markdown(md_path.read_text(encoding="utf-8"))
+            raw = md_path.read_text(encoding="utf-8")
+            body_markdown = _strip_frontmatter(raw).strip()
+            body_html = _render_markdown(raw)
         except OSError:
             logger.warning("Failed to read final markdown for audio_id=%s", audio_id, exc_info=True)
-    return TranscriptDetail(item=item, body_html=body_html)
+    return TranscriptDetail(item=item, body_html=body_html, body_markdown=body_markdown)

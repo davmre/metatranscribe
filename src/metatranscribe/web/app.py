@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flask import (
     Flask,
+    Response,
     abort,
     flash,
     jsonify,
@@ -163,6 +164,19 @@ def _register_routes(app: Flask) -> None:
         if detail is None:
             abort(404)
         return render_template("detail.html", detail=detail)
+
+    @app.route("/transcript/<audio_id>/download")
+    @login_required
+    def download(audio_id: str):
+        detail = transcripts.load_detail(_settings(app), _store(app), audio_id)
+        if detail is None or not detail.body_markdown:
+            abort(404)
+        filename = (secure_filename(detail.item.title) or audio_id) + ".md"
+        return Response(
+            detail.body_markdown + "\n",
+            mimetype="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
     @app.route("/status/<audio_id>")
     @login_required

@@ -132,6 +132,30 @@ def test_transcript_detail_renders_exported_markdown(client, app):
     assert b"My Memo" in resp.data
     assert b"<h1>Heading</h1>" in resp.data
     assert b"Hello world body." in resp.data
+    # Copy/download affordances present, with the raw markdown source embedded.
+    assert b"id=\"copy-btn\"" in resp.data
+    assert b"/transcript/abc123/download" in resp.data
+
+    download = client.get(f"/transcript/{audio_id}/download")
+    assert download.status_code == 200
+    assert download.mimetype == "text/markdown"
+    assert "My_Memo.md" in download.headers["Content-Disposition"]
+    body = download.data.decode("utf-8")
+    assert "# Heading" in body
+    assert "Hello world body." in body
+    assert "audio_id: abc123" not in body  # frontmatter stripped
+
+
+def test_download_404_when_not_ready(client, app):
+    settings = app.config["SETTINGS"]
+    store = StateStore(settings.state_db_path)
+    from metatranscribe.models import AudioFileRecord
+
+    store.insert_audio_if_new(
+        AudioFileRecord(audio_id="pend01", source_path="x.m4a", source_hash="hp", status="ingested")
+    )
+    _login(client)
+    assert client.get("/transcript/pend01/download").status_code == 404
 
 
 def test_transcript_markdown_is_sanitized(client, app):
