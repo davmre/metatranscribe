@@ -6,6 +6,33 @@ import unicodedata
 from datetime import date
 from pathlib import Path
 
+_MONTH_NAMES = {
+    "january": 1, "february": 2, "march": 3, "april": 4,
+    "may": 5, "june": 6, "july": 7, "august": 8,
+    "september": 9, "october": 10, "november": 11, "december": 12,
+}
+
+_RECORDER_PATTERN = re.compile(r"^(?P<month>[A-Za-z]+)\s+(?P<day>\d{1,2})\s+at\s+", re.IGNORECASE)
+
+
+def infer_date_from_filename(filename: str, today: date) -> date | None:
+    stem = Path(filename).stem
+    m = _RECORDER_PATTERN.match(stem)
+    if not m:
+        return None
+    month = _MONTH_NAMES.get(m.group("month").lower())
+    if month is None:
+        return None
+    day = int(m.group("day"))
+    for year in (today.year, today.year - 1):
+        try:
+            candidate = date(year, month, day)
+        except ValueError:
+            continue
+        if candidate <= today:
+            return candidate
+    return None
+
 
 def sanitize_suggested_name(name: str) -> str:
     normalized = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")

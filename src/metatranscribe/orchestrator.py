@@ -16,7 +16,7 @@ from metatranscribe.ingest.manual_inbox import get_original_audio_path, ingest_n
 from metatranscribe.models import CanonicalTranscript, ProviderTranscript, Segment
 from metatranscribe.output.io import write_outputs
 from metatranscribe.output.polish_markdown import render_polished_markdown
-from metatranscribe.output.publish import build_publish_filename, copy_published_markdown
+from metatranscribe.output.publish import build_publish_filename, copy_published_markdown, infer_date_from_filename
 from metatranscribe.postprocess.silence_annotations import build_silence_markers
 from metatranscribe.preprocess.audio_prep import (
     AudioChunk,
@@ -254,7 +254,9 @@ def export_step(settings: Settings, store: StateStore, audio_id: str, dry_run: b
     write_outputs(canonical, final_md, final_json, markdown)
     published_path: Path | None = None
     if settings.export_publish_dir:
-        publish_filename = build_publish_filename(datetime.now().date(), polish_result.suggested_name)
+        today = datetime.now().date()
+        recording_date = infer_date_from_filename(source_file, today) or today
+        publish_filename = build_publish_filename(recording_date, polish_result.suggested_name)
         published_path = copy_published_markdown(final_md, settings.export_publish_dir, publish_filename)
         _write_publish_artifact(
             settings.output_root / "artifacts" / audio_id / "polish",
