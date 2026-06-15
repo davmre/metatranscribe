@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="upload" method="post" action="{{ url_for('upload') }}" enctype="multipart/form-data">
+  <input type="file" name="audio" accept="audio/*" required>
+  <button class="btn" type="submit">Upload &amp; transcribe</button>
+</form>
+
+<h2>Transcripts</h2>
+{% if items %}
+<ul class="items" id="items">
+  {% for item in items %}
+  <li>
+    <a href="{{ url_for('transcript', audio_id=item.audio_id) }}">
+      <span>
+        {{ item.title }}
+        <div class="meta">
+          {{ item.created_at[:10] }}{% if item.duration_sec %} &middot; {{ item.duration_sec | duration }}{% endif %}
+        </div>
+      </span>
+      <span class="badge {% if item.is_ready %}ready{% elif item.is_failed %}failed{% else %}progress{% endif %}"
+            data-audio-id="{{ item.audio_id }}">{{ item.status_label }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">No transcripts yet. Upload a recording to get started.</p>
+{% endif %}
+
+<script>
+// Poll in-progress items and refresh the page when any finishes.
+(function () {
+  const badges = document.querySelectorAll('.badge.progress');
+  if (!badges.length) return;
+  const ids = Array.from(badges).map(b => b.dataset.audioId);
+  const timer = setInterval(async () => {
+    for (const id of ids) {
+      try {
+        const resp = await fetch(`/status/${id}`);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        if (data.status === 'exported' || data.status === 'failed') {
+          clearInterval(timer);
+          location.reload();
+          return;
+        }
+      } catch (e) { /* ignore transient errors */ }
+    }
+  }, 5000);
+})();
+</script>
+{% endblock %}

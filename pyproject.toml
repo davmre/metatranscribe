@@ -17,6 +17,11 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+web = [
+  "flask>=3.0",
+  "waitress>=3.0",
+  "markdown>=3.6",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

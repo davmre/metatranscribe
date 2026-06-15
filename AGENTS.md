@@ -42,6 +42,7 @@ The pipeline is designed to:
 - `scripts/export.py`
 - `scripts/reexport.py` (re-run export/polish only from existing canonical artifacts)
 - `scripts/run_pipeline.py` (full orchestrated run)
+- `scripts/serve_web.py` (password-protected web UI for upload/browse; serves via Waitress)
 
 ## Core Modules
 - `src/metatranscribe/orchestrator.py`
@@ -58,6 +59,8 @@ The pipeline is designed to:
   - Markdown rendering and polish pass.
 - `src/metatranscribe/preprocess/audio_prep.py`
   - ffmpeg normalization, probing, and chunk splitting.
+- `src/metatranscribe/web/*`
+  - Flask app factory, session-cookie auth, background pipeline worker, and transcript read helpers.
 
 ## Artifacts and Debugging
 For each `audio_id`, inspect:

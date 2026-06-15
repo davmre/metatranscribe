@@ -36,6 +36,12 @@ def _settings(tmp_path: Path) -> Settings:
         export_publish_dir=None,
         log_level="INFO",
         pipeline_version="0.1.0",
+        web_password="test-password",
+        web_secret_key="test-secret-key",
+        web_host="127.0.0.1",
+        web_port=8080,
+        web_max_upload_mb=512,
+        web_session_cookie_secure=False,
     )
 
 

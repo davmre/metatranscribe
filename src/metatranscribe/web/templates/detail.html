@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% set item = detail.item %}
+{% block title %}{{ item.title }} &middot; metatranscribe{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('index') }}">&larr; All transcripts</a></p>
+<h1>{{ item.title }}</h1>
+<p class="meta">
+  {{ item.created_at[:19] | replace('T', ' ') }}{% if item.duration_sec %} &middot; {{ item.duration_sec | duration }}{% endif %}
+  &middot; <span class="badge {% if item.is_ready %}ready{% elif item.is_failed %}failed{% else %}progress{% endif %}">{{ item.status_label }}</span>
+</p>
+
+{% if item.is_ready and detail.body_html %}
+  <div class="actions" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+    <button class="btn secondary" type="button" id="copy-btn">Copy</button>
+    <a class="btn secondary" href="{{ url_for('download', audio_id=item.audio_id) }}">Download .md</a>
+  </div>
+  <textarea id="transcript-source" style="position:absolute; left:-9999px; top:0;"
+            aria-hidden="true" tabindex="-1" readonly>{{ detail.body_markdown }}</textarea>
+  <article class="transcript">{{ detail.body_html | safe }}</article>
+  <script>
+    (function () {
+      const btn = document.getElementById('copy-btn');
+      const source = document.getElementById('transcript-source');
+      btn.addEventListener('click', async () => {
+        const text = source.value;
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        } catch (e) {
+          // Fallback for non-secure contexts (no clipboard API).
+          source.removeAttribute('aria-hidden');
+          source.style.left = '0';
+          source.focus();
+          source.select();
+          try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+          source.style.left = '-9999px';
+        }
+        const original = btn.textContent;
+        btn.textContent = ok ? 'Copied!' : 'Copy failed';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      });
+    })();
+  </script>
+{% elif item.is_failed %}
+  <p class="error">Transcription failed.</p>
+  {% if item.error %}<pre style="white-space: pre-wrap;">{{ item.error }}</pre>{% endif %}
+{% else %}
+  <p class="empty">Processing &mdash; this page will refresh automatically.</p>
+  <script>
+    const timer = setInterval(async () => {
+      try {
+        const resp = await fetch('{{ url_for("status", audio_id=item.audio_id) }}');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.status === 'exported' || data.status === 'failed') {
+          clearInterval(timer);
+          location.reload();
+        }
+      } catch (e) { /* ignore */ }
+    }, 5000);
+  </script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Log in &middot; metatranscribe{% endblock %}
+{% block content %}
+<h1>metatranscribe</h1>
+<form method="post">
+  <p>
+    <label for="password">Password</label><br>
+    <input type="password" id="password" name="password" autofocus autocomplete="current-password"
+           style="width: 100%; padding: 0.6rem; font-size: 1rem; border-radius: 8px;
+                  border: 1px solid rgba(128,128,128,0.5);">
+  </p>
+  <button class="btn" type="submit">Log in</button>
+</form>
+{% endblock %}

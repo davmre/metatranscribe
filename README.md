@@ -11,6 +11,7 @@ Modular pipeline to process arbitrary audio files and generate high-quality, tim
 - Optional single LLM polish pass to generate final Markdown
 - Canonical JSON + polished Markdown outputs per note
 - Idempotent sqlite state tracking and rerunnable steps
+- Optional password-protected web interface for uploading and browsing transcripts from a phone
 
 ## Quickstart
 1. Create and activate a Python 3.11+ virtualenv.
@@ -59,6 +60,38 @@ python scripts/run_pipeline.py
 - Canonical artifact: `outputs/artifacts/<audio_id>/canonical.json`
 - Reconciliation I/O artifacts: `outputs/artifacts/<audio_id>/reconcile/*`
 - Polish I/O artifacts: `outputs/artifacts/<audio_id>/polish/*`
+
+## Web Interface
+A minimal, mobile-friendly web UI lets you upload a recording, watch its status, and browse
+previous transcripts. It is single-user and protected by one shared password.
+
+1. Install the web extra:
+   ```bash
+   pip install -e ".[dev,web]"
+   ```
+2. Set the web variables in `.env` (see `.env.example`):
+   - `WEB_PASSWORD` — the shared login password.
+   - `WEB_SECRET_KEY` — a fixed random string used to sign session cookies. **Keep it stable**;
+     changing it logs you out. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`.
+   - `WEB_HOST` (default `127.0.0.1`), `WEB_PORT` (default `8080`), `WEB_MAX_UPLOAD_MB` (default `512`).
+   - `WEB_SESSION_COOKIE_SECURE` (default `true`) — set `false` only for local `http://` testing.
+3. Run it (served by Waitress, a production WSGI server):
+   ```bash
+   python scripts/serve_web.py
+   ```
+
+Uploads land in `data/inbox/` and are processed by a single background worker that runs the
+normal pipeline (`ingest → transcribe → reconcile → export`); the page polls and refreshes when
+a transcript is ready. The worker also resumes any in-flight records on startup.
+
+### Public deployment
+The app speaks plain HTTP and is meant to run **behind a reverse proxy (nginx/Caddy) that
+terminates HTTPS** — a password and session cookie cross the wire, so TLS is required. Keep
+`WEB_HOST=127.0.0.1` and let the proxy forward to it. Remember to:
+- Raise the proxy's max body size to at least `WEB_MAX_UPLOAD_MB` (e.g. nginx `client_max_body_size`)
+  and increase read/proxy timeouts for large uploads.
+- Run under a process manager (e.g. systemd) so the server restarts on crash.
+- `GET /healthz` is unauthenticated for uptime checks.
 
 ## Cron Example
 Runs every 4 hours:
